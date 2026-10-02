@@ -174,21 +174,6 @@ img{display:block;max-width:100%}
 /* ============ Toast ============ */
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
 .toast.show{opacity:1}
-
-/* ============ 媒体列表 tile ============ */
-.media-tile{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);align-items:flex-start;background:#fff}
-.media-tile:last-child{border-bottom:none}
-.media-tile .cover{width:100px;height:56px;border-radius:6px;background:#ddd;overflow:hidden;flex-shrink:0}
-.media-tile .info{flex:1;min-width:0}
-.media-tile .title{font-size:13px;font-weight:500;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.media-tile .author{font-size:11px;color:var(--text3);margin-top:3px}
-.media-tile .stats{font-size:11px;color:var(--text3);margin-top:2px}
-
-/* ============ spinner ============ */
-.spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--pink);border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
-.spinner-sm{width:16px;height:16px;border-width:2px}
-.spinner-lg{width:36px;height:36px;border-width:3px}
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -270,15 +255,15 @@ img{display:block;max-width:100%}
       </div>
     </div>
     <div class="profile-menu">
-      <div class="profile-menu-item" onclick="openHistory()">
+      <div class="profile-menu-item" onclick="showToast('观看历史')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         <span>观看历史</span><span class="arrow">›</span>
       </div>
-      <div class="profile-menu-item" onclick="openFavList()">
+      <div class="profile-menu-item" onclick="showToast('我的收藏')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
         <span>我的收藏</span><span class="arrow">›</span>
       </div>
-      <div class="profile-menu-item" onclick="openWatchLater()">
+      <div class="profile-menu-item" onclick="showToast('稍后再看')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         <span>稍后再看</span><span class="arrow">›</span>
       </div>
@@ -286,31 +271,68 @@ img{display:block;max-width:100%}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span>私信</span><span class="arrow">›</span>
       </div>
-      <div class="profile-menu-item" onclick="CookieStore.loggedIn?logout():openLogin()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        <span>${CookieStore.loggedIn?'退出登录':'登录 / 切换账号'}</span><span class="arrow">›</span>
+      <div class="profile-menu-item" onclick="showToast('设置')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>设置</span><span class="arrow">›</span>
       </div>
     </div>
   </div>
 
   <!-- ============ 视频详情页（全屏覆盖） ============ -->
   <div class="video-detail" id="video-detail">
-    <div class="player-area" id="player-area" style="aspect-ratio:16/9;background:#000">
+    <div class="player-area" id="player-area">
       <div class="back-btn" onclick="closeVideo()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="m15 18-6-6 6-6"/></svg>
       </div>
-      <canvas class="danmaku-layer" id="danmaku-canvas"></canvas>
-      <video id="video-player" playsinline preload="metadata" style="width:100%;height:100%;display:block;background:#000" controlslist="nodownload"></video>
-      <div class="player-controls" style="pointer-events:auto">
+      <div class="danmaku-layer" id="danmaku-layer"></div>
+      <div class="play-btn" id="play-btn" onclick="togglePlay()">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <div class="player-controls">
         <span class="ctrl-btn" onclick="togglePlay()" id="play-ctrl">▶</span>
-        <span class="time" id="play-time">00:00 / 00:00</span>
+        <span class="time" id="play-time">01:23 / 04:05</span>
         <div class="progress" onclick="seekVideo(event)"><div class="progress-fill" id="progress-fill"></div></div>
         <span class="ctrl-btn" onclick="cycleSpeed()" id="speed-btn">1.0x</span>
         <span class="ctrl-btn" onclick="toggleDanmaku()" id="danmaku-btn">弹</span>
-        <span class="ctrl-btn" onclick="showQualityMenu()" id="quality-btn">自动</span>
+        <span class="ctrl-btn" onclick="cycleQuality()" id="quality-btn">高清</span>
       </div>
     </div>
-    <div class="video-detail-body" id="video-body"></div>
+    <div class="video-detail-body">
+      <div class="vd-title" id="vd-title"></div>
+      <div class="vd-stats">
+        <span id="vd-views"></span>
+        <span id="vd-danmaku"></span>
+        <span id="vd-date"></span>
+      </div>
+      <div class="vd-up">
+        <div class="up-avatar"></div>
+        <div class="up-info">
+          <div class="up-name" id="vd-up"></div>
+          <div class="up-fans">128万粉丝</div>
+        </div>
+        <button class="follow-btn" onclick="this.textContent=this.textContent==='关注'?'已关注':'关注';showToast('操作成功')">关注</button>
+      </div>
+      <div class="vd-actions">
+        <div class="vd-action" id="act-like" onclick="toggleLike()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.34-8.68A1.5 1.5 0 0 1 14 2a2 2 0 0 1 2 2v1.88z"/></svg>
+          <span id="like-count">1.2万</span>
+        </div>
+        <div class="vd-action" onclick="showToast('投币成功')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 22v-4"/><rect x="4" y="6" width="16" height="12" rx="2"/></svg>
+          <span>3456</span>
+        </div>
+        <div class="vd-action" onclick="showToast('收藏成功')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          <span>8901</span>
+        </div>
+        <div class="vd-action" onclick="showToast('分享成功')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/></svg>
+          <span>分享</span>
+        </div>
+      </div>
+      <div class="vd-section-title">相关推荐</div>
+      <div class="video-grid" id="related-grid" style="padding:0"></div>
+    </div>
   </div>
 
   <!-- ============ 底部导航 ============ -->
@@ -382,32 +404,13 @@ const CORS_PROXIES = [
   url => 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url),
 ];
 
-async function biliFetch(url, opts={}, timeout=8000) {
-  opts.headers = opts.headers || {};
-  opts.headers['Referer']='https://www.bilibili.com';
-  opts.headers['User-Agent']='Mozilla/5.0';
-  // 自动带上 Cookie（需要用户先通过 Cookie 粘贴登录）
-  const cookie = CookieStore.load();
-  if(cookie && !opts.headers['Cookie']) opts.headers['Cookie']=cookie;
-
+async function biliFetch(url, timeout=8000) {
   let lastErr;
   for (const proxy of CORS_PROXIES) {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
-      const method = opts.method||'GET';
-      let realUrl;
-      let fetchOpts = {signal: controller.signal, method, headers: opts.headers};
-      if(opts.body){fetchOpts.body = opts.body}
-      if(method==='POST' && proxy===CORS_PROXIES[0]){
-        // allorigins 对 POST 需要 method 参数
-        realUrl = 'https://api.allorigins.win/raw?method=POST&url='+encodeURIComponent(url);
-      }else if(method==='POST'){
-        realUrl = 'https://corsproxy.io/?url='+encodeURIComponent(url);
-      }else{
-        realUrl = proxy(url);
-      }
-      const resp = await fetch(realUrl, fetchOpts);
+      const resp = await fetch(proxy(url), {signal: controller.signal, headers: {'Referer':'https://www.bilibili.com','User-Agent':'Mozilla/5.0'}});
       clearTimeout(timer);
       if (!resp.ok) throw new Error('HTTP '+resp.status);
       const text = await resp.text();
@@ -622,7 +625,8 @@ const chatMessages = {
 
 // ============ 状态 ============
 let currentTab='home', currentHomeTab='recommend', currentSession=null;
-let isPlaying=false, danmakuOn=true, qualityIdx=0;
+let isPlaying=false, danmakuOn=true, currentSpeed=1, qualityIdx=0;
+const speeds=[0.5,0.75,1.0,1.25,1.5,2.0];
 const qualities=['流畅','标清','高清','超清','4K'];
 const danmakuTexts=['哈哈哈哈','前方高能','666','泪目','awsl','这也太强了','学到了','UP主牛逼','一键三连了','爷青回','名场面','弹幕护体'];
 
@@ -709,453 +713,96 @@ function switchHomeTab(tab){
   else loadRanking();
 }
 
-// ============ 真实弹幕 Protobuf 解析 ============
-// B 站 dm seg.so 弹幕简化 protobuf 解析
-function parseDanmaku(buf){
-  const bytes=new Uint8Array(buf);
-  const items=[];let i=0;
-  function readVarint(){let v=0,sh=0;while(true){const b=bytes[i++];v|=(b&0x7f)<<sh;sh+=7;if(!(b&0x80))break}return v}
-  function readString(len){const s=new TextDecoder().decode(bytes.slice(i,i+len));i+=len;return s}
-  function zigzag(n){return(n>>>1)^-(n&1)}
-
-  while(i<bytes.length-4){
-    try{
-      // 外层：repeated DanmakuElem item = 1 (tag 1, length-delimited)
-      const tag=bytes[i++];
-      if(tag!==0x0a){i++;continue}
-      let len=readVarint(),end=i+len;
-      let item={progress:0,mode:1,size:25,color:0xffffff,text:'',midHash:''};
-      while(i<end){
-        const t=bytes[i++];
-        const wire=t&0x07,num=t>>>3;
-        if(wire===0){// varint
-          const v=readVarint();
-          if(num===2)item.progress=v;         // field 2: progress ms
-          else if(num===3)item.mode=v;        // field 3: mode (1滚动 2 3 底部 4 5 顶部 7高级)
-          else if(num===4)item.size=v;        // field 4: font size scale
-          else if(num===5)item.color=v;       // field 5: color rgb hex
-          else if(num===7)item.sendTime=v;    // field 7: send_time (seconds)
-          else if(num===8)item.pool=v;        // field 8: pool
-          else if(num===9)item.weight=v;      // field 9: weight
-          else if(num===12)item.id=v;         // field 12: id (segment)
-        }else if(wire===2){// length-delimited
-          const l=readVarint();
-          if(num===6)item.text=readString(l); // field 6: text
-          else if(num===1)item.midHash=readString(l); // field 1: sender mid hash
-          else i+=l;
-        }else break;
-      }
-      if(item.text)items.push(item);
-      i=end;
-    }catch(e){i++;if(i>bytes.length-10)break}
-  }
-  return items;
-}
-
-// ============ Canvas 弹幕渲染 ============
-let danmakuData=[],danmakuCanvas,danmakuCtx,danmakuActive=false,danmakuTimer=null;
-let danmakuTraces=[]; // 每条弹幕的状态 {x,y,text,color,mode,size,speed}
-
-function initDanmakuCanvas(){
-  danmakuCanvas=document.getElementById('danmaku-canvas');
-  if(!danmakuCanvas)return;
-  const fit=()=>{
-    const parent=document.getElementById('player-area');
-    if(!parent)return;
-    const w=parent.clientWidth,h=parent.clientHeight;
-    danmakuCanvas.width=w*devicePixelRatio;danmakuCanvas.height=h*devicePixelRatio;
-    danmakuCanvas.style.width=w+'px';danmakuCanvas.style.height=h+'px';
-    danmakuCtx=danmakuCanvas.getContext('2d');danmakuCtx.scale(devicePixelRatio,devicePixelRatio);
-  };
-  fit();
-  window._dmFit=fit;window.addEventListener('resize',fit);
-}
-function startDanmakuLoop(){
-  if(!danmakuCtx)return;
-  stopDanmakuLoop();
-  const tick=()=>{
-    danmakuCtx.clearRect(0,0,danmakuCanvas.width,danmakuCanvas.height);
-    const now=videoPlayer.currentTime; // 秒
-    const w=danmakuCanvas.width/devicePixelRatio,h=danmakuCanvas.height/devicePixelRatio;
-    const fontBase=16;
-    danmakuData.forEach(d=>{
-      const sec=(d.progress||0)/1000; // protobuf 里是毫秒，转秒
-      if(Math.abs(sec-now)<0.2 && !d._launched){
-        d._launched=true;
-        const sizePx=(d.size||25)/25*fontBase;
-        const font=sizePx+'px sans-serif';
-        danmakuCtx.font=font;
-        const tw=danmakuCtx.measureText(d.text).width;
-        danmakuTraces.push({
-          x:w+10,y:Math.random()*(h-sizePx*2)+sizePx,
-          text:d.text,color:'#'+d.color.toString(16).padStart(6,'0'),
-          sizePx,mode:d.mode||1,
-          speed:(w+tw)/8000 // 8秒横穿
-        });
-      }
-    });
-    // 更新绘制
-    danmakuTraces.forEach(t=>{
-      t.x-=t.speed*16;
-      danmakuCtx.fillStyle=t.color;
-      danmakuCtx.strokeStyle='rgba(0,0,0,0.7)';
-      danmakuCtx.lineWidth=2;
-      danmakuCtx.font=t.sizePx+'px sans-serif';
-      danmakuCtx.textBaseline='middle';
-      danmakuCtx.strokeText(t.text,t.x,t.y);
-      danmakuCtx.fillText(t.text,t.x,t.y);
-    });
-    danmakuTraces=danmakuTraces.filter(t=>t.x>-300);
-    danmakuTimer=requestAnimationFrame(tick);
-  };
-  danmakuTimer=requestAnimationFrame(tick);
-}
-function stopDanmakuLoop(){if(danmakuTimer){cancelAnimationFrame(danmakuTimer);danmakuTimer=null}danmakuTraces=[]}
-function startDanmaku(){
-  danmakuActive=true;
-  document.getElementById('danmaku-canvas').style.display='block';
-  startDanmakuLoop();
-}
-function stopDanmaku(){
-  danmakuActive=false;
-  document.getElementById('danmaku-canvas').style.display='none';
-  stopDanmakuLoop();
-}
-async function loadDanmaku(cid,totalDuration=300){
-  danmakuData=[];
-  if(!cid)return;
-  const segs=Math.min(Math.ceil(totalDuration/360)+1,8);
-  for(let i=1;i<=segs;i++){
-    try{
-      const url='https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid='+cid+'&segment_index='+i;
-      const resp=await fetch(url,{headers:{Cookie:CookieStore.load(),Referer:'https://www.bilibili.com'}});
-      if(!resp.ok)continue;
-      const bytes=new Uint8Array(await resp.arrayBuffer());
-      const items=parseDanmaku(bytes);
-      danmakuData.push(...items);
-    }catch(e){}
-  }
-  danmakuData.sort((a,b)=>a.progress-b.progress);
-}
-
-// ============ 真实播放流 ============
-let currentPlayData=null,currentPlaySource=null,currentQuality=0;
-const QUALITY_MAP=[
-  {qn:16,l:'360P'},{qn:32,l:'480P'},{qn:64,l:'720P'},
-  {qn:74,l:'720P60'},{qn:80,l:'1080P'},{qn:112,l:'1080P+'},
-  {qn:116,l:'1080P60'},{qn:120,l:'4K'},{qn:125,l:'HDR'},{qn:127,l:'8K'}
-];
-async function loadPlayUrl(bvid,aid,cid,qn=80){
-  try{
-    const signed=await wbiSign({bvid,aid,cid,qn,fnval:16|1,fnver:0,fourk:1});
-    const u='https://api.bilibili.com/x/player/wbi/playurl?'+new URLSearchParams(signed).toString();
-    const data=await biliFetch(u);
-    return data.data;
-  }catch(e){return null}
-}
-function pickDurlByQn(durl,qn){
-  // durl 结构简化为 [{url,backup_url:[],id,quality,length,size}]
-  if(!durl||!durl.length)return null;
-  if(qn){const f=durl.find(d=>d.id===qn);if(f)return f}
-  return durl.sort((a,b)=>b.id-a.id)[0];
-}
-async function pickDashByQn(dash,qn){
-  // dash.video / dash.audio: [{baseUrl,backupUrl[],qualityType,codecs,width,height,frameRate...}]
-  if(!dash)return null;
-  const videos=dash.video||[];
-  const audios=dash.audio||[];
-  let v=videos[0],a=null;
-  if(qn){const f=videos.find(x=>x.qualityType===qn);if(f)v=f}
-  v=v||videos.sort((a,b)=>(b.height*b.frameRate)-(a.height*a.frameRate))[0];
-  a=audios.sort((x,y)=>y.bandwidth-x.bandwidth)[0];
-  return{v,a};
-}
-function playSelected(source){
-  const v=document.getElementById('video-player');
-  if(!v||!source)return;
-  v.pause();
-  v.removeAttribute('src');v.load();
-  if(source.videourl){v.src=source.videourl;v.play()}
-  else if(source.dashv){
-    // 简化：只用视频流 + 外部音频（但音频 URL 跨域问题）
-    // 这里先用 durl 方案，dash 留作 fallback
-    v.src=source.dashv;v.play();
-  }
-}
-
-// ============ 重写的 openVideo ============
-let currentVideo=null,currentVideoPages=[],currentVideoPageIdx=0;
-let videoPlayer,videoBound=false;
-async function openVideo(bvid,aid,initialCid){
-  // 先确保 video 元素就绪
-  if(!videoBound){
-    videoPlayer=document.getElementById('video-player');
-    videoPlayer.addEventListener('play',()=>{document.getElementById('play-ctrl').textContent='⏸'});
-    videoPlayer.addEventListener('pause',()=>{document.getElementById('play-ctrl').textContent='▶'});
-    videoPlayer.addEventListener('timeupdate',()=>{
-      const d=videoPlayer.duration||0;const t=videoPlayer.currentTime;
-      document.getElementById('progress-fill').style.width=(t/d*100||0)+'%';
-      document.getElementById('play-time').textContent=fmtDuration(t)+' / '+fmtDuration(d);
-    });
-    videoPlayer.addEventListener('ended',()=>{document.getElementById('play-ctrl').textContent='▶'});
-    videoBound=true;
-    initDanmakuCanvas();
-  }
-
-  // 先用列表缓存数据填充骨架（如果有）
-  const cache=(videos.find(x=>x.bvid===bvid)||mockVideos[0]);
-  const u=document.getElementById('video-body');
-  u.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3)"><div class="spinner spinner-lg"></div><div style="margin-top:12px">加载视频中...</div></div>';
-
+// ============ 视频详情 ============
+async function openVideo(bvid){
+  const v=videos.find(x=>x.bvid===bvid)||videos[0];
+  // 先用列表数据填充
+  document.getElementById('vd-title').textContent=v.title;
+  document.getElementById('vd-views').textContent='▶ '+v.views+'播放';
+  document.getElementById('vd-danmaku').textContent='💬 '+v.danmaku+'弹幕';
+  document.getElementById('vd-date').textContent='📅 '+v.date;
+  document.getElementById('vd-up').textContent=v.up;
+  document.getElementById('like-count').textContent=v.likeCount||'1.2万';
   document.getElementById('video-detail').classList.add('active');
   document.body.style.overflow='hidden';
-
-  try{
-    const data=await biliFetch('https://api.bilibili.com/x/web-interface/view?'+(bvid?'bvid='+bvid:'aid='+aid));
-    currentVideo=data.data;
-    const d=data.data;
-    // 构建页面 HTML
-    currentVideoPages=d.pages||[];
-    const initialPage=initialCid?currentVideoPages.findIndex(p=>p.cid===initialCid):0;
-    currentVideoPageIdx=initialPage>=0?initialPage:0;
-    await buildVideoBodyHTML(d);
-    // 加载第一个分 P
-    await switchVideoPage(currentVideoPageIdx);
-  }catch(e){
-    u.innerHTML='<div style="padding:40px;text-align:center;color:var(--danger)">加载失败：'+e.message+'</div>';
-    showToast('视频加载失败');
-  }
-}
-
-async function buildVideoBodyHTML(d){
-  const u=document.getElementById('video-body');
-  const upLink='onclick="openSpace('+d.owner.mid+')"';
-  const pagesHTML=(currentVideoPages||[]).map((p,i)=>
-    `<div class="page-item${i===currentVideoPageIdx?' active':''}" onclick="switchVideoPage(${i})"><div class="no">P${p.page}</div><div class="name">${p.part||('第'+p.page+'P')}</div><div class="dur">${fmtDuration(p.duration)}</div></div>`
-  ).join('');
-
-  u.innerHTML=`
-    <div class="vd-title">${d.title}</div>
-    <div class="vd-stats">
-      <span>▶ ${fmtNum(d.stat.view)}播放</span>
-      <span>💬 ${fmtNum(d.stat.danmaku)}弹幕</span>
-      <span>📅 ${new Date(d.pubdate*1000).toLocaleDateString('zh-CN')}</span>
-    </div>
-    <div class="vd-up">
-      <div class="up-avatar" ${upLink} style="background:url('${d.owner.face}') center/cover;border-radius:50%;cursor:pointer"></div>
-      <div class="up-info" ${upLink} style="cursor:pointer">
-        <div class="up-name">${d.owner.name}</div>
-        <div class="up-fans">UID: ${d.owner.mid}</div>
-      </div>
-      <button class="follow-btn" onclick="toggleFollow(${d.owner.mid},!this.dataset.followed)${CookieStore.loggedIn?'':';showToast(\'请先登录\');return false'}">${CookieStore.loggedIn?'关注':'登录'}</button>
-    </div>
-    <div class="vd-actions">
-      <div class="vd-action" id="act-like" onclick="doLike('${d.bvid}',${d.aid},this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.34-8.68A1.5 1.5 0 0 1 14 2a2 2 0 0 1 2 2v1.88z"/></svg>
-        <span>${fmtNum(d.stat.like)}</span>
-      </div>
-      <div class="vd-action" onclick="doCoin('${d.bvid}',${d.aid},this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 22v-4"/><rect x="4" y="6" width="16" height="12" rx="2"/></svg>
-        <span>${fmtNum(d.stat.coin)}</span>
-      </div>
-      <div class="vd-action" onclick="doFav(${d.aid},this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-        <span>${fmtNum(d.stat.favorite)}</span>
-      </div>
-      <div class="vd-action" onclick="showToast('三连！')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <span>三连</span>
-      </div>
-      <div class="vd-action" onclick="navigator.clipboard.writeText(location.href);showToast('链接已复制')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/></svg>
-        <span>分享</span>
-      </div>
-    </div>
-    ${d.desc?`<div style="padding:12px 16px;font-size:13px;color:var(--text2);line-height:1.5;background:#fff;border-radius:10px;margin-bottom:12px">${d.desc}</div>`:''}
-    ${(currentVideoPages||[]).length>1?`
-      <div class="vd-section-title">分 P (${currentVideoPages.length})</div>
-      <div style="max-height:260px;overflow-y:auto;background:#fff;border-radius:10px;margin-bottom:12px">${pagesHTML}</div>`:''}
-    <div class="vd-section-title">评论</div>
-    <div id="comments-box" style="background:#fff;border-radius:10px;margin-bottom:12px;padding:4px 0">
-      <div style="padding:20px;text-align:center;color:var(--text3)"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle"></div> 加载中...</div>
-    </div>
-    <div class="vd-section-title">相关推荐</div>
-    <div id="related-grid" class="video-grid" style="padding:0"></div>
-  `;
-  // 异步加载评论和相关
-  loadCommentsAsync(d.aid);
-  loadRelatedAsync(d.aid);
-}
-async function loadCommentsAsync(aid){
-  const c=document.getElementById('comments-box');
-  if(!c)return;
-  const msgs=await loadComments(aid);
-  if(!msgs.length){c.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3);font-size:13px">暂无评论</div>';return}
-  c.innerHTML=msgs.map(m=>`
-    <div style="display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);align-items:flex-start">
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--blue));flex-shrink:0;background-image:url('${m.face}');background-size:cover"></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;color:var(--blue);font-weight:500">${m.user}</div>
-        <div style="font-size:14px;margin-top:3px;line-height:1.45">${m.text||''}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:5px">${fmtNum(m.like||0)} 赞 · ${fmt.timeAgo?fmt.timeAgo(m.time):new Date((m.time||0)*1000).toLocaleDateString('zh-CN')}</div>
-      </div>
-    </div>`).join('');
-}
-async function loadRelatedAsync(aid){
-  const g=document.getElementById('related-grid');
-  if(!g)return;
-  try{
-    const data=await biliFetch('https://api.bilibili.com/x/web-interface/archive/related?aid='+aid);
-    const list=(data.data||[]).map(r=>({
-      bvid:r.bvid,title:r.title,cover:r.pic+'@400w_250h.webp',
-      duration:typeof r.duration==='number'?fmtDuration(r.duration):r.duration,
-      up:r.owner?.name||'',views:fmtNum(r.stat?.view||0)
-    }));
-    g.innerHTML=list.slice(0,6).map(renderVideoCard).join('')||'<div style="padding:30px;text-align:center;color:var(--text3);grid-column:1/-1">暂无相关</div>';
-  }catch(e){g.innerHTML=''}
-}
-
-// ============ 多 P 切换 + 真实播放流 ============
-async function switchVideoPage(idx){
-  if(!currentVideo)return;
-  currentVideoPageIdx=idx;
-  const page=currentVideoPages[idx];
-  if(!page)return;
-  // 标记 active
-  document.querySelectorAll('#video-body .page-item').forEach((el,i)=>el.classList.toggle('active',i===idx));
-  document.getElementById('vd-title').textContent=currentVideo.title+(currentVideoPages.length>1?' · P'+page.page+' '+page.part:'');
-
-  // 加载真实播放流
-  const qn=CookieStore.loggedIn?80:64;
-  const pd=await loadPlayUrl(currentVideo.bvid,currentVideo.aid,page.cid,qn);
-  currentPlayData=pd;
-  if(pd){
-    let src=null;
-    // 优先使用 durl（带音轨的 FLV）
-    if(pd.durl&&pd.durl.length){
-      const f=pickDurlByQn(pd.durl,qn)||pd.durl[0];
-      src=f.url;
-      currentPlaySource={url:src,type:'flv',durl:f};
-      currentQuality=f.id;
-    }else if(pd.dash){
-      const d=await pickDashByQn(pd.dash,qn);
-      if(d){src=d.v.baseUrl;currentPlaySource={url:src,type:'dashv',dashv:d.v.baseUrl,audio:d.a?d.a.baseUrl:''}}
-    }
-    if(src){
-      // 更新画质按钮
-      const allQ=pd.accept_quality||[];
-      const qnName=QUALITY_MAP.find(x=>x.qn===currentQuality)?.l||'自动';
-      document.getElementById('quality-btn').textContent=qnName;
-      videoPlayer.src=src;
-      videoPlayer.crossOrigin='anonymous';
-      videoPlayer.play().catch(()=>videoPlayer.play());
-    }
-  }else{
-    showToast('播放流获取失败（可能需要登录）');
-  }
-  // 更新时长
-  videoPlayer.loadedmetadata=()=>{
-    if(videoPlayer.duration>0)videoPlayer.dataset.duration=videoPlayer.duration;
-  };
-  // 加载弹幕
-  await loadDanmaku(page.cid,page.duration||currentVideo.duration||300);
+  renderRelated();
   startDanmaku();
-}
-
-function showQualityMenu(){
-  const pd=currentPlayData;
-  if(!pd){showToast('暂无画质列表');return}
-  const box=bottomSheet('选择画质',body=>{
-    const qlist=(pd.accept_quality||[]).map(q=>QUALITY_MAP.find(x=>x.qn===q)||{qn:q,l:'画质'+q});
-    body.innerHTML=qlist.map(q=>`
-      <div class="page-item" onclick="changeQuality(${q.qn})"><div class="no">${currentQuality===q.qn?'✓':' '}</div><div class="name">${q.l}</div></div>`).join('');
-  });
-  // 存 close handle
-  window._closeSheet=box;
-}
-async function changeQuality(qn){
-  const page=currentVideoPages[currentVideoPageIdx];
-  if(!page)return;
-  const pd=await loadPlayUrl(currentVideo.bvid,currentVideo.aid,page.cid,qn);
-  if(pd){
-    let url=null;
-    if(pd.durl){const f=pickDurlByQn(pd.durl,qn);if(f)url=f.url;currentQuality=f?.id||qn}
-    else if(pd.dash){const d=await pickDashByQn(pd.dash,qn);if(d){url=d.v.baseUrl;currentQuality=qn}}
-    if(url){
-      videoPlayer.pause();videoPlayer.src=url;videoPlayer.play();
-      document.getElementById('quality-btn').textContent=QUALITY_MAP.find(x=>x.qn===currentQuality)?.l||'自动';
+  // 异步获取完整详情
+  try {
+    const data = await biliFetch('https://api.bilibili.com/x/web-interface/view?bvid='+bvid);
+    const d = data.data;
+    document.getElementById('vd-title').textContent=d.title;
+    document.getElementById('vd-views').textContent='▶ '+fmtNum(d.stat.view)+'播放';
+    document.getElementById('vd-danmaku').textContent='💬 '+fmtNum(d.stat.danmaku)+'弹幕';
+    document.getElementById('vd-date').textContent='📅 '+new Date(d.pubdate*1000).toLocaleDateString('zh-CN');
+    document.getElementById('vd-up').textContent=d.owner.name;
+    document.getElementById('like-count').textContent=fmtNum(d.stat.like);
+    // 更新相关推荐
+    if(d.related && d.related.length){
+      const related = d.related.slice(0,6).map(item=>({
+        bvid:item.bvid, title:item.title,
+        cover:item.pic+'@400w_250h.webp',
+        duration:typeof item.duration==='number'?fmtDuration(item.duration):item.duration,
+        up:item.owner?item.owner.name:'未知',
+        views:fmtNum(item.stat?item.stat.view:0),
+      }));
+      document.getElementById('related-grid').innerHTML=related.map(renderVideoCard).join('');
     }
-  }
-  window._closeSheet&&window._closeSheet();
+  } catch(e){console.warn('视频详情加载失败:',e)}
 }
-
-// ============ 重写控制按钮 ============
 function closeVideo(){
-  if(videoPlayer){videoPlayer.pause();videoPlayer.removeAttribute('src');videoPlayer.load()}
-  stopDanmaku();
   document.getElementById('video-detail').classList.remove('active');
   document.body.style.overflow='';
+  isPlaying=false;updatePlayBtn();stopDanmaku();
 }
-function togglePlay(){
-  if(!videoPlayer)return;
-  if(videoPlayer.paused)videoPlayer.play();else videoPlayer.pause();
+function togglePlay(){isPlaying=!isPlaying;updatePlayBtn();if(isPlaying)showToast('播放')}
+function updatePlayBtn(){
+  document.getElementById('play-btn').style.display=isPlaying?'none':'flex';
+  document.getElementById('play-ctrl').textContent=isPlaying?'⏸':'▶';
 }
 function seekVideo(e){
-  if(!videoPlayer)return;
   const bar=e.currentTarget;const rect=bar.getBoundingClientRect();
-  const pct=(e.clientX-rect.left)/rect.width;
-  videoPlayer.currentTime=pct*(videoPlayer.duration||0);
-  bar.querySelector('.progress-fill').style.width=(pct*100)+'%';
+  const pct=((e.clientX-rect.left)/rect.width*100).toFixed(0);
+  document.getElementById('progress-fill').style.width=pct+'%';
 }
-let currentSpeed=1;const speeds=[0.5,0.75,1,1.25,1.5,2];
 function cycleSpeed(){
-  currentSpeed=speeds[(speeds.indexOf(currentSpeed)+1)%speeds.length];
-  videoPlayer.playbackRate=currentSpeed;
-  document.getElementById('speed-btn').textContent=currentSpeed+'x';
+  currentSpeed=(currentSpeed+1)%speeds.length;
+  document.getElementById('speed-btn').textContent=speeds[currentSpeed]+'x';
+  showToast('倍速：'+speeds[currentSpeed]+'x');
+}
+function cycleQuality(){
+  qualityIdx=(qualityIdx+1)%qualities.length;
+  document.getElementById('quality-btn').textContent=qualities[qualityIdx];
+  showToast('画质：'+qualities[qualityIdx]);
 }
 function toggleDanmaku(){
-  danmakuActive=!danmakuActive;
-  if(danmakuActive){document.getElementById('danmaku-canvas').style.display='block';startDanmakuLoop()}
-  else{document.getElementById('danmaku-canvas').style.display='none';stopDanmakuLoop()}
-  document.getElementById('danmaku-btn').textContent=danmakuActive?'弹':'关';
+  danmakuOn=!danmakuOn;
+  document.getElementById('danmaku-btn').textContent=danmakuOn?'弹':'关';
+  document.getElementById('danmaku-layer').style.display=danmakuOn?'block':'none';
+  showToast(danmakuOn?'弹幕开':'弹幕关');
 }
-async function doLike(bvid,aid,el){
-  const ok=await likeVideo(bvid,aid,el.classList.contains('liked')?2:1);
-  if(ok){el.classList.toggle('liked')}
+let danmakuTimer=null;
+function startDanmaku(){
+  stopDanmaku();
+  const layer=document.getElementById('danmaku-layer');
+  danmakuTimer=setInterval(()=>{
+    if(!danmakuOn)return;
+    const d=document.createElement('div');
+    d.className='danmaku-item';
+    d.textContent=danmakuTexts[Math.floor(Math.random()*danmakuTexts.length)];
+    d.style.top=Math.floor(Math.random()*70)+'%';
+    d.style.animationDuration=(6+Math.random()*4)+'s';
+    layer.appendChild(d);
+    setTimeout(()=>d.remove(),10000);
+  },800);
 }
-async function doCoin(bvid,aid){
-  const ok=await coinVideo(bvid,aid,1);
-  if(ok)showToast('投币成功');
+function stopDanmaku(){if(danmakuTimer){clearInterval(danmakuTimer);danmakuTimer=null}document.getElementById('danmaku-layer').innerHTML=''}
+function toggleLike(){
+  const el=document.getElementById('act-like');
+  el.classList.toggle('liked');
+  const c=document.getElementById('like-count');
+  c.textContent=el.classList.contains('liked')?'1.3万':'1.2万';
 }
-async function doFav(aid){
-  const folders=await loadFavFolders();
-  if(!folders.length){showToast('没有可用的收藏夹');return}
-  const close=bottomSheet('选择收藏夹',body=>{
-    body.innerHTML=folders.map(f=>`
-      <div class="page-item" onclick="confirmFav(${f.id},${aid});window._closeSheet()"><div class="no">★</div><div class="name">${f.title}</div><div class="dur">${f.media_count||0}个</div></div>
-    `).join('');
-  });
-  window._closeSheet=close;
-}
-async function confirmFav(mediaId,aid){
-  await favDeal(mediaId,aid,true);
-  showToast('已收藏');
-}
-
-// ============ bottomSheet / confirmDialog / Toast 辅助 ============
-function bottomSheet(title,buildHtml){
-  const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500';
-  const s=document.createElement('div');s.style.cssText='position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:14px 14px 0 0;z-index:501;max-height:70vh;overflow-y:auto;padding-bottom:20px';
-  s.innerHTML=`<div style="width:36px;height:4px;background:#ddd;border-radius:2px;margin:10px auto"></div>${title?`<div style="padding:6px 16px 10px;font-weight:700;border-bottom:1px solid var(--border)">${title}</div>`:''}`;
-  document.body.appendChild(o);document.body.appendChild(s);
-  buildHtml&&buildHtml(s);
-  const close=()=>{o.remove();s.remove()};
-  o.onclick=close;
-  return close;
-}
-
-// ============ 覆盖旧的假函数 ============
-function cycleQuality(){showQualityMenu()}
 
 // ============ 私信 ============
 function renderSessions(){
@@ -1244,319 +891,8 @@ function sendChatMsg(){
   },1200);
 }
 
-// ============ Cookie 持久化 + 登录态 ============
-const LS_COOKIE='biliflex_web_cookies_v1';
-const LS_SESSION='biliflex_web_session_v1';
-const CookieStore={
-  save(c){try{localStorage.setItem(LS_COOKIE,c||'')}catch(e){}},
-  load(){return localStorage.getItem(LS_COOKIE)||''},
-  clear(){localStorage.removeItem(LS_COOKIE);localStorage.removeItem(LS_SESSION)},
-  get csrf(){const m=Object.fromEntries(this.load().split(';').map(s=>{const i=s.indexOf('=');return i>0?[s.substring(0,i).trim(),s.substring(i+1).trim()]:[s.trim(),'']}));return m['bili_jct']||''},
-  get sessdata(){return this.load().match(/SESSDATA=([^;]+)/)?.[1]||''},
-  get mid(){return parseInt((this.load().match(/DedeUserID=([^;]+)/)?.[1]||'0'),10)},
-  get uname(){try{return JSON.parse(localStorage.getItem(LS_SESSION)||'{}').uname||''}catch(e){return''}},
-  get face(){try{return JSON.parse(localStorage.getItem(LS_SESSION)||'{}').face||''}catch(e){return''}},
-  get loggedIn(){return this.csrf.length>0 && this.mid>0}
-};
-async function loginByCookie(cookieStr){
-  CookieStore.save(cookieStr);
-  // 拉 nav 确认登录态 + 刷新 WBI
-  try{
-    const data=await biliFetch('https://api.bilibili.com/x/web-interface/nav');
-    if(data.data.isLogin===1){
-      const sess={mid:data.data.mid,uname:data.data.uname,face:data.data.face,coins:data.data.money,vip:data.data.vipStatus};
-      localStorage.setItem(LS_SESSION,JSON.stringify(sess));
-      _wbiKeys=null;await getWbiKeys();
-      showToast('登录成功：'+sess.uname);
-      refreshProfile();
-      return true;
-    }else{
-      CookieStore.clear();showToast('Cookie 无效');return false;
-    }
-  }catch(e){showToast('登录失败：'+e.message);return false}
-}
-async function logout(){CookieStore.clear();refreshProfile();showToast('已退出登录')}
-
-// 带 Cookie 的 fetch（biliFetch 已经透传，这里只是注释）
-// 使用 CookieStore.load() 作为 Cookie header
-
-// ============ 用户空间（Space） ============
-async function openSpace(mid){
-  const box=bottomSheet('用户空间',async body=>{
-    body.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3)"><div class="spinner spinner-lg"></div><div style="margin-top:12px">加载中...</div></div>';
-    try{
-      const card=await biliFetch('https://api.bilibili.com/x/web-interface/card?mid='+mid);
-      const info=card.data.card;
-      const stat=card.data.follower?card.data.follower:{follower:0,following:0};
-      // 投稿（需要 WBI 的 arc/search 或 app 端接口）
-      const arc=await biliFetch('https://api.bilibili.com/x/web-interface/season?mid='+mid+'&sort_reverse=false&sort_order=pubdate');
-      const vids=(arc.data&&arc.data.seasons?arc.data.seasons[0]?.archives:[])||[];
-      body.innerHTML=`
-        <div style="background:linear-gradient(135deg,#fff5f7,#e6f7fe);padding:24px 16px;text-align:center">
-          <div class="profile-avatar" style="margin:0 auto 12px;border:3px solid #fff"><img src="${info.face}" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
-          <div style="font-size:18px;font-weight:700">${info.name}${info.level>0?`<span class="level-badge">Lv${info.level}</span>`:''}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px">UID: ${info.mid}</div>
-          ${info.sign?`<div style="font-size:12px;color:var(--text3);margin-top:8px;padding:0 20px">${info.sign}</div>`:''}
-          <div style="display:flex;justify-content:center;gap:24px;margin-top:16px">
-            <div><div style="font-weight:700">${fmtNum(stat.following||0)}</div><div style="font-size:11px;color:var(--text3)">关注</div></div>
-            <div><div style="font-weight:700">${fmtNum(stat.follower||0)}</div><div style="font-size:11px;color:var(--text3)">粉丝</div></div>
-          </div>
-        </div>
-        <div style="padding:12px 16px;font-weight:600">投稿视频 (${vids.length})</div>
-        <div class="video-grid" style="padding:10px">${vids.map(v=>renderVideoCard({bvid:v.bvid,title:v.title,cover:v.pic+'@400w_250h.webp',duration:fmtDuration(v.duration),up:info.name,views:fmtNum(v.stat?.view||0),danmaku:'',date:''})).join('')||'<div style="padding:30px;text-align:center;color:var(--text3);grid-column:1/-1">暂无投稿</div>'}</div>
-      `;
-    }catch(e){
-      // 降级：用 rank/v2 up 投稿接口
-      try{
-        const a=await wbiSign({mid,ps:12,pn:1});
-        const r=await biliFetch('https://api.bilibili.com/x/space/wbi/arc/search?'+new URLSearchParams(a).toString());
-        const info=r.data.list.vlist?.[0]||{};
-        const vids=r.data.list.vlist||[];
-        body.innerHTML=`
-          <div style="padding:24px 16px;text-align:center"><div class="profile-avatar" style="margin:0 auto 12px"><img src="${info.pic||''}" style="width:100%;height:100%;border-radius:50%"></div>
-          <div style="font-size:18px;font-weight:700">${info.name||'用户 '+mid}</div></div>
-          <div class="video-grid" style="padding:10px">${vids.map(v=>renderVideoCard({bvid:v.bvid,title:v.title,cover:v.pic+'@400w_250h.webp',duration:fmtDuration(v.length),up:info.name,views:fmtNum(v.play||0),danmaku:'',date:''})).join('')}</div>`;
-      }catch(e2){body.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">加载失败</div>'}
-    }
-  });
-}
-
-// ============ 评论区 ============
-async function loadComments(aid){
-  try{
-    const data=await biliFetch('https://api.bilibili.com/x/v2/reply/main?type=1&oid='+aid+'&mode=3&next=0');
-    const list=(data.data.replies||[]).map(c=>({
-      user:c.member.uname,face:c.member.face,
-      text:c.content.message,like:c.like,time:c.ctime,
-      rpid:c.rpid
-    }));
-    return list;
-  }catch(e){return[]}
-}
-
-// ============ 多 P / 分 P 列表 ============
-async function getPages(bvid,aid){
-  try{
-    const u=bvid?'bvid='+bvid:'aid='+aid;
-    const data=await biliFetch('https://api.bilibili.com/x/player/pagelist?'+u);
-    return data.data||[];
-  }catch(e){return[]}
-}
-
-// ============ 收藏夹 / 历史 / 稍后再看 ============
-async function loadFavFolders(){
-  if(!CookieStore.loggedIn){showToast('请先登录');return[]}
-  try{
-    const data=await biliFetch('https://api.bilibili.com/x/v3/fav/folder/created/list?up_mid='+CookieStore.mid+'&web_location=333.1387');
-    return data.data.list||[];
-  }catch(e){return[]}
-}
-async function loadFavResources(mediaId,pn=1){
-  try{
-    const data=await biliFetch('https://api.bilibili.com/x/v3/fav/resource/list?media_id='+mediaId+'&pn='+pn+'&ps=20&platform=web&order=mtime&type=0');
-    return (data.data.medias||[]).map(m=>({
-      bvid:m.bvid,title:m.title,cover:m.cover+'@400w_250h.webp',
-      duration:fmtDuration(m.duration),up:m.upper?.name||'',aid:m.id
-    }));
-  }catch(e){return[]}
-}
-async function loadHistory(max=0,viewAt=0){
-  if(!CookieStore.loggedIn){showToast('请先登录');return[]}
-  try{
-    const u=new URLSearchParams({ps:20,max,view_at:viewAt}).toString();
-    const data=await biliFetch('https://api.bilibili.com/x/web-interface/history/cursor?'+u);
-    return data.data;
-  }catch(e){return{list:[],cursor:{max:0,view_at:0}}}
-}
-async function loadWatchLater(){
-  if(!CookieStore.loggedIn){showToast('请先登录');return[]}
-  try{
-    const data=await biliFetch('https://api.bilibili.com/x/v2/history/toview/web');
-    return (data.data.list||[]).map(m=>({
-      bvid:m.bvid,title:m.title,cover:m.pic+'@400w_250h.webp',
-      duration:fmtDuration(m.duration),up:m.owner?.name||'',aid:m.aid
-    }));
-  }catch(e){return[]}
-}
-
-// ============ 互动（点赞/投币/收藏/关注） ============
-async function likeVideo(bvid,aid,like=1){
-  if(!CookieStore.loggedIn){showToast('请先登录');return false}
-  try{
-    const b=new URLSearchParams({bvid:bvid||'',aid:aid||'',like,eab_x:1,ramval:0,type:1,csrf:CookieStore.csrf});
-    await biliFetch('https://api.bilibili.com/x/v2/view/like',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b.toString()});
-    return true;
-  }catch(e){showToast('操作失败：'+e.message);return false}
-}
-async function coinVideo(bvid,aid,multiply=1,alsoLike=0){
-  if(!CookieStore.loggedIn){showToast('请先登录');return false}
-  try{
-    const b=new URLSearchParams({bvid:bvid||'',aid:aid||'',multiply,select_like:alsoLike,csrf:CookieStore.csrf});
-    await biliFetch('https://api.bilibili.com/x/v2/view/coin/add',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b.toString()});
-    return true;
-  }catch(e){showToast('操作失败：'+e.message);return false}
-}
-async function triple(bvid){
-  if(!CookieStore.loggedIn){showToast('请先登录');return false}
-  try{
-    const b=new URLSearchParams({bvid,like:1,eab_x:1,ramval:0,type:1,csrf:CookieStore.csrf});
-    await biliFetch('https://api.bilibili.com/x/web-interface/archive/like/triple',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b.toString()});
-    return true;
-  }catch(e){showToast('操作失败：'+e.message);return false}
-}
-async function toggleFollow(mid,follow){
-  if(!CookieStore.loggedIn){showToast('请先登录');return false}
-  try{
-    const b=new URLSearchParams({fid:mid,act:follow?1:2,re_src:'',csrf:CookieStore.csrf});
-    await biliFetch('https://api.bilibili.com/x/relation/modify',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b.toString()});
-    showToast(follow?'已关注':'已取消关注');return true;
-  }catch(e){showToast('操作失败：'+e.message);return false}
-}
-async function favDeal(mediaId,aid,add=true){
-  if(!CookieStore.loggedIn){showToast('请先登录');return false}
-  try{
-    const b=new URLSearchParams({resources:aid+':2',media_id:mediaId,platform:'web',
-      add_media_ids:add?mediaId:'',del_media_ids:add?'':mediaId,csrf:CookieStore.csrf});
-    await biliFetch('https://api.bilibili.com/x/v3/fav/resource/batch-deal',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b.toString()});
-    return true;
-  }catch(e){showToast('操作失败：'+e.message);return false}
-}
-
-// ============ Profile 真实化 ============
-function refreshProfile(){
-  const n=document.querySelector('.profile-name');
-  const u=document.querySelector('.profile-uid');
-  const av=document.querySelector('.profile-avatar');
-  const stats=document.querySelectorAll('.profile-stats .profile-stat-num');
-  if(!n)return;
-  if(CookieStore.loggedIn){
-    const sess={};try{Object.assign(sess,JSON.parse(localStorage.getItem(LS_SESSION)||'{}'))}catch(e){}
-    n.textContent=CookieStore.uname||sess.uname||'BiliFlex用户';
-    u.textContent='UID: '+CookieStore.mid;
-    if(CookieStore.face){av.innerHTML='<img src="'+CookieStore.face+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'}
-    // 刷新硬币/粉丝等
-    try{
-      biliFetch('https://api.bilibili.com/x/web-interface/nav').then(d=>{
-        const s=d.data;
-        n.textContent=s.uname||n.textContent;
-        sess.uname=s.uname;sess.face=s.face;sess.mid=s.mid;sess.coins=s.money;
-        try{localStorage.setItem(LS_SESSION,JSON.stringify(sess))}catch(e){}
-        stats[2]&&(stats[2].textContent=fmtNum(s.money||0));
-      });
-      biliFetch('https://api.bilibili.com/x/web-interface/nav/stat').then(d=>{
-        const s=d.data;
-        stats[0]&&(stats[0].textContent=fmtNum(s.following||0));
-        stats[1]&&(stats[1].textContent=fmtNum(s.follower||0));
-      }).catch(()=>{});
-    }catch(e){}
-  }else{
-    n.textContent='点击登录';
-    u.textContent='登录后可同步收藏/历史/消息';
-    av.innerHTML='';
-    if(stats[0])stats[0].textContent='—';
-    if(stats[1])stats[1].textContent='—';
-    if(stats[2])stats[2].textContent='—';
-  }
-}
-
-// ============ 各菜单项真实功能 ============
-async function openFavList(){
-  if(!CookieStore.loggedIn){await openLogin();return}
-  const folders=await loadFavFolders();
-  const close=bottomSheet('我的收藏 ('+folders.length+')',async body=>{
-    body.innerHTML=folders.map(f=>`
-      <div class="page-item" onclick="openFavResources(${f.id},'${encodeURIComponent(f.title)}');window._closeSheet()"><div class="no">★</div><div class="name">${f.title}</div><div class="dur">${f.media_count||0}个</div></div>
-    `).join('')||'<div style="padding:30px;text-align:center;color:var(--text3);grid-column:1/-1">暂无收藏夹</div>';
-  });
-  window._closeSheet=close;
-}
-async function openFavResources(mediaId,title){
-  const close=bottomSheet(decodeURIComponent(title),async body=>{
-    body.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3)"><div class="spinner spinner-sm"></div> 加载中...</div>';
-    const list=await loadFavResources(mediaId);
-    body.innerHTML=`<div class="video-grid" style="padding:10px">${list.map(v=>renderVideoCard({...v,views:'',date:'',danmaku:''})).join('')||'<div style="padding:30px;text-align:center;color:var(--text3);grid-column:1/-1">没有内容</div>'}</div>`;
-  });
-  window._closeSheet=close;
-}
-async function openHistory(){
-  if(!CookieStore.loggedIn){await openLogin();return}
-  const data=await loadHistory();
-  const list=data.list||[];
-  const close=bottomSheet('观看历史 ('+list.length+')',body=>{
-    body.innerHTML=list.map(h=>{
-      const pic=(h.pic||'').replace('http:','https:')+'@160w_100h.webp';
-      return `<div class="media-tile" style="cursor:pointer" onclick="window._closeSheet();openVideo('${h.bvid}')">
-        <div class="cover"><img src="${pic}" style="width:100%;height:100%;object-fit:cover"></div>
-        <div class="info"><div class="title">${h.title}</div><div class="author">${h.author_name}</div><div class="stats">${h.progress?'已看到 '+fmtDuration(h.progress):''}</div></div>
-      </div>`;
-    }).join('')||'<div style="padding:30px;text-align:center;color:var(--text3)">暂无历史</div>';
-  });
-  window._closeSheet=close;
-}
-async function openWatchLater(){
-  if(!CookieStore.loggedIn){await openLogin();return}
-  const list=await loadWatchLater();
-  const close=bottomSheet('稍后再看 ('+list.length+')',body=>{
-    body.innerHTML=list.map(v=>`<div class="media-tile" style="cursor:pointer" onclick="window._closeSheet();openVideo('${v.bvid}')">
-      <div class="cover"><img src="${v.cover}" style="width:100%;height:100%;object-fit:cover"></div>
-      <div class="info"><div class="title">${v.title}</div><div class="author">${v.up}</div><div class="stats">${v.duration}</div></div>
-    </div>`).join('')||'<div style="padding:30px;text-align:center;color:var(--text3)">暂无稍后再看</div>';
-  });
-  window._closeSheet=close;
-}
-
-// ============ 登录（Cookie 粘贴） ============
-async function openLogin(){
-  const close=bottomSheet('登录 BiliFlex',body=>{
-    body.innerHTML=`
-      <div style="padding:16px 20px;font-size:13px;color:var(--text2);line-height:1.6">
-        <b>方法一：Cookie 登录（推荐）</b><br>
-        1. 浏览器登录 bilibili.com<br>
-        2. F12 → Application → Cookies<br>
-        3. 复制 SESSDATA、bili_jct、DedeUserID 等<br>
-        4. 粘贴到下方输入框
-      </div>
-      <div style="padding:0 16px">
-        <textarea id="cookie-input" placeholder="粘贴 Cookie 串... 示例：SESSDATA=xxx; bili_jct=yyy; DedeUserID=123" style="width:100%;min-height:80px;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
-      </div>
-      <div style="padding:12px 16px;display:flex;gap:10px">
-        <button onclick="doLoginCookie()" style="flex:1;padding:10px;background:var(--pink);color:#fff;border:none;border-radius:18px;font-weight:600;cursor:pointer">登录</button>
-      </div>
-      ${CookieStore.loggedIn?`
-      <div style="padding:8px 16px"><button onclick="doLogout()" style="width:100%;padding:10px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:18px;cursor:pointer">退出登录</button></div>
-      `:''}
-      <div style="padding:4px 20px 16px;font-size:11px;color:var(--text3);line-height:1.5">
-        登录态仅保存在本地 localStorage，不会上传服务器。<br>
-        扫码登录暂未实现（passport 域名在 CORS 代理下不稳定）。
-      </div>
-    `;
-  });
-  window._closeSheet=close;
-}
-async function doLoginCookie(){
-  const el=document.getElementById('cookie-input');if(!el)return;
-  const c=el.value.trim();if(!c){showToast('请粘贴 Cookie');return}
-  const ok=await loginByCookie(c);
-  if(ok){window._closeSheet&&window._closeSheet()}
-}
-function doLogout(){
-  logout();window._closeSheet&&window._closeSheet();openLogin();
-}
-
-// ============ Profile 页面点击登录 ============
-document.addEventListener('click',e=>{
-  const p=e.target.closest('.profile-header,.profile-avatar');
-  if(p&&!CookieStore.loggedIn){openLogin()}
-});
-
-// 重写原来 showToast('设置') 的行为
-const orig_showToast=showToast;
-showToast=function(msg){orig_showToast(msg)};
-
 // ============ 初始化 ============
-renderHot();loadVideos();loadLives();refreshProfile();
-// 启动时尝试刷新 WBI 密钥（用于后续 WBI 请求）
-getWbiKeys().then(()=>console.log('WBI keys ready')).catch(e=>console.warn('WBI init:',e.message));
+renderHot();loadVideos();loadLives();
 </script>
 </body>
 </html>
