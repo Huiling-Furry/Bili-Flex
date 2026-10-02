@@ -374,7 +374,19 @@ const mockLives = ['【英雄联盟】S14全球总决赛 决赛','【原神】4.
 let lives = [...mockLives];
 
 // ============ B站 API 基础设施 ============
-// CORS 代理列表（按优先级尝试）
+// 本地代理（serve.py）：同源、能补 Referer、能透传 Cookie，优先使用
+let LOCAL_PROXY=false;
+async function detectLocalProxy(){
+  try{
+    const r=await fetch('/__ping',{cache:'no-store'});
+    if(r.ok){LOCAL_PROXY=true;console.log('[BiliFlex] 本地代理已启用')}
+  }catch(e){LOCAL_PROXY=false}
+  return LOCAL_PROXY;
+}
+// 视频流地址：经本地代理时自动补 Referer（B站 CDN 强制校验，否则 403）
+function mediaSrc(u){return LOCAL_PROXY?('/__media?url='+encodeURIComponent(u)):u}
+
+// 公共 CORS 代理列表（按优先级尝试）
 const CORS_PROXIES = [
   url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
   url => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
@@ -382,11 +394,38 @@ const CORS_PROXIES = [
 ];
 
 async function biliFetch(url, opts={}, timeout=8000) {
+  // 兼容 biliFetch(url, 6000) 这种把超时当第二参传入的写法
+  if(typeof opts==='number'){timeout=opts;opts={}}
   opts.headers = opts.headers || {};
   opts.headers['Referer']='https://www.bilibili.com';
   opts.headers['User-Agent']='Mozilla/5.0';
+  // raw=true 时允许 code!==0 也返回数据（如 nav 未登录返回 -101 但带 wbi_img）
+  const raw = !!opts.raw;
   // 自动带上 Cookie（需要用户先通过 Cookie 粘贴登录）
   const cookie = CookieStore.load();
+
+  // ① 本地代理优先（同源，Cookie 通过 X-Bili-Cookie 头透传）
+  if(LOCAL_PROXY){
+    try{
+      const controller = new AbortController();
+      const timer = setTimeout(()=>controller.abort(), timeout);
+      const h = {...opts.headers};
+      if(cookie && !h['X-Bili-Cookie']) h['X-Bili-Cookie']=cookie;
+      const fo = {signal:controller.signal, method:opts.method||'GET', headers:h};
+      if(opts.body) fo.body = opts.body;
+      const resp = await fetch('/__api?url='+encodeURIComponent(url), fo);
+      clearTimeout(timer);
+      if(resp.ok){
+        const data = JSON.parse(await resp.text());
+        if(data.code!==0 && !raw) throw new Error('API code '+data.code+': '+(data.message||''));
+        return data;
+      }
+    }catch(e){
+      if(/API code/.test(e.message)) throw e; // 接口自身的业务错误，直接抛出
+      console.warn('[BiliFlex] 本地代理请求失败，回退公共代理：',e.message);
+    }
+  }
+
   if(cookie && !opts.headers['Cookie']) opts.headers['Cookie']=cookie;
 
   let lastErr;
@@ -411,7 +450,7 @@ async function biliFetch(url, opts={}, timeout=8000) {
       if (!resp.ok) throw new Error('HTTP '+resp.status);
       const text = await resp.text();
       const data = JSON.parse(text);
-      if (data.code !== 0) throw new Error('API code '+data.code+': '+(data.message||''));
+      if (data.code !== 0 && !raw) throw new Error('API code '+data.code+': '+(data.message||''));
       return data;
     } catch(e) { lastErr = e; }
   }
@@ -458,9 +497,12 @@ const MIXIN_KEY_ENC_TAB = [46,47,18,2,53,8,23,32,15,50,10,31,58,3,45,35,27,43,5,
 let _wbiKeys = null;
 async function getWbiKeys(){
   if(_wbiKeys) return _wbiKeys;
-  const nav = await biliFetch('https://api.bilibili.com/x/web-interface/nav');
-  const imgUrl = nav.data.wbi_img.img_url;
-  const subUrl = nav.data.wbi_img.sub_url;
+  // 未登录时 nav 返回 code=-101，但 data.wbi_img 依然有效，所以用 raw 模式
+  const nav = await biliFetch('https://api.bilibili.com/x/web-interface/nav',{raw:true});
+  const wbiImg = nav && nav.data && nav.data.wbi_img;
+  if(!wbiImg) throw new Error('获取 WBI 密钥失败');
+  const imgUrl = wbiImg.img_url;
+  const subUrl = wbiImg.sub_url;
   _wbiKeys = {
     imgKey: imgUrl.split('/').pop().split('.')[0],
     subKey: subUrl.split('/').pop().split('.')[0]
@@ -503,7 +545,7 @@ async function loadVideos(){
   renderVideos();
   // 异步加载真实 API，成功则替换
   try {
-    const data = await biliFetch('https://api.bilibili.com/x/web-interface/popular?ps=20&pn=1', 6000);
+    const data = await biliFetch('https://api.bilibili.com/x/web-interface/popular?ps=20&pn=1', {}, 6000);
     videos = data.data.list.map(item=>({
       bvid: item.bvid,
       title: item.title,
@@ -527,7 +569,7 @@ async function loadRanking(){
   videos = [...mockVideos].reverse();
   renderVideos();
   try {
-    const data = await biliFetch('https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all', 6000);
+    const data = await biliFetch('https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all', {}, 6000);
     videos = data.data.list.map(item=>({
       bvid: item.bvid, title: item.title,
       cover: item.pic+'@400w_250h.webp',
@@ -547,7 +589,7 @@ async function loadLives(){
   lives = [...mockLives];
   renderLives();
   try {
-    const data = await biliFetch('https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id=0&area_id=0&page=1', 6000);
+    const data = await biliFetch('https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id=0&area_id=0&page=1', {}, 6000);
     lives = data.data.list.slice(0,12).map(item=>({
       title: item.title,
       cover: item.cover+'@400w_250h.webp',
@@ -833,7 +875,9 @@ async function loadDanmaku(cid,totalDuration=300){
   for(let i=1;i<=segs;i++){
     try{
       const url='https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid='+cid+'&segment_index='+i;
-      const resp=await fetch(url,{headers:{Cookie:CookieStore.load(),Referer:'https://www.bilibili.com'}});
+      const resp=LOCAL_PROXY
+        ? await fetch('/__api?url='+encodeURIComponent(url),{headers:{'X-Bili-Cookie':CookieStore.load()}})
+        : await fetch(url,{headers:{Cookie:CookieStore.load(),Referer:'https://www.bilibili.com'}});
       if(!resp.ok)continue;
       const bytes=new Uint8Array(await resp.arrayBuffer());
       const items=parseDanmaku(bytes);
@@ -914,6 +958,8 @@ async function openVideo(bvid,aid,initialCid){
 
   document.getElementById('video-detail').classList.add('active');
   document.body.style.overflow='hidden';
+  // 详情页显示后播放器才有尺寸，重新适配弹幕画布（否则画布为 0x0，弹幕不可见）
+  if(window._dmFit)window._dmFit();
 
   try{
     const data=await biliFetch('https://api.bilibili.com/x/web-interface/view?'+(bvid?'bvid='+bvid:'aid='+aid));
@@ -1028,7 +1074,9 @@ async function switchVideoPage(idx){
   if(!page)return;
   // 标记 active
   document.querySelectorAll('#video-body .page-item').forEach((el,i)=>el.classList.toggle('active',i===idx));
-  document.getElementById('vd-title').textContent=currentVideo.title+(currentVideoPages.length>1?' · P'+page.page+' '+page.part:'');
+  // 注意：vd-title 是 class 不是 id，用 querySelector 取（之前用 getElementById 会拿到 null 抛错，导致整条播放链路中断）
+  const titleEl=document.querySelector('#video-body .vd-title');
+  if(titleEl)titleEl.textContent=currentVideo.title+(currentVideoPages.length>1?' · P'+page.page+' '+page.part:'');
 
   // 加载真实播放流
   const qn=CookieStore.loggedIn?80:64;
@@ -1051,12 +1099,12 @@ async function switchVideoPage(idx){
       const allQ=pd.accept_quality||[];
       const qnName=QUALITY_MAP.find(x=>x.qn===currentQuality)?.l||'自动';
       document.getElementById('quality-btn').textContent=qnName;
-      videoPlayer.src=src;
-      videoPlayer.crossOrigin='anonymous';
-      videoPlayer.play().catch(()=>videoPlayer.play());
+      // 经本地代理播放：自动补 Referer，否则 B 站 CDN 返回 403
+      videoPlayer.src=mediaSrc(src);
+      videoPlayer.play().catch(()=>{});
     }
   }else{
-    showToast('播放流获取失败（可能需要登录）');
+    showToast(LOCAL_PROXY?'播放流获取失败（可能需要登录）':'无法获取播放流：请用 python3 serve.py 启动本地代理后再打开页面');
   }
   // 更新时长
   videoPlayer.loadedmetadata=()=>{
@@ -1087,7 +1135,7 @@ async function changeQuality(qn){
     if(pd.durl){const f=pickDurlByQn(pd.durl,qn);if(f)url=f.url;currentQuality=f?.id||qn}
     else if(pd.dash){const d=await pickDashByQn(pd.dash,qn);if(d){url=d.v.baseUrl;currentQuality=qn}}
     if(url){
-      videoPlayer.pause();videoPlayer.src=url;videoPlayer.play();
+      videoPlayer.pause();videoPlayer.src=mediaSrc(url);videoPlayer.play().catch(()=>{});
       document.getElementById('quality-btn').textContent=QUALITY_MAP.find(x=>x.qn===currentQuality)?.l||'自动';
     }
   }
@@ -1674,9 +1722,13 @@ const orig_showToast=showToast;
 showToast=function(msg){orig_showToast(msg)};
 
 // ============ 初始化 ============
-renderHot();loadVideos();loadLives();refreshProfile();
-// 启动时尝试刷新 WBI 密钥（用于后续 WBI 请求）
-getWbiKeys().then(()=>console.log('WBI keys ready')).catch(e=>console.warn('WBI init:',e.message));
+renderHot();refreshProfile();
+// 先探测本地代理（serve.py）是否可用，再加载真实数据
+detectLocalProxy().then(ok=>{
+  if(!ok)console.warn('[BiliFlex] 未检测到本地代理 /__ping：视频无法播放，接口回退公共 CORS 代理。请用 python3 serve.py 启动。');
+  loadVideos();loadLives();
+  getWbiKeys().then(()=>console.log('WBI keys ready')).catch(e=>console.warn('WBI init:',e.message));
+});
 </script>
 </body>
 </html>
