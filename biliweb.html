@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>BiliFlex · Web</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#f4f5f7;color:#18191c;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;-webkit-tap-highlight-color:transparent}
+  img{display:block;max-width:100%}
+  a{color:#00aeec;text-decoration:none}
+  button{cursor:pointer;font-family:inherit;border:none;background:none}
+  input,textarea{font-family:inherit}
+  ul,ol{list-style:none}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-thumb{background:#d0d2d6;border-radius:3px}
+
+  /* ------ 颜色变量 ------ */
+  :root{
+    --primary:#00aeec;--primary-dark:#0096d6;--primary-light:#e6f7fe;
+    --danger:#f25d59;--warn:#ff9b30;--success:#00a870;
+    --text-1:#18191c;--text-2:#61666d;--text-3:#9499a0;
+    --bg:#f4f5f7;--surface:#ffffff;--surface-2:#f6f7f8;--border:#e3e5e7;
+  }
+
+  /* ------ 顶部 AppBar ------ */
+  .appbar{height:52px;background:linear-gradient(90deg,#fb7299 0%,#00aeec 100%);color:#fff;display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .appbar .back{width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:50%;transition:background .2s}
+  .appbar .back:active{background:rgba(255,255,255,.2)}
+  .appbar .title{font-size:17px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .appbar .actions{display:flex;gap:8px}
+  .appbar .icon-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;border-radius:50%;transition:background .2s}
+  .appbar .icon-btn:active{background:rgba(255,255,255,.2)}
+
+  /* ------ 底部导航 ------ */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:58px;background:#fff;border-top:1px solid var(--border);display:flex;z-index:100}
+  .bottom-nav .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text-3);font-size:11px;transition:color .2s}
+  .bottom-nav .nav-item.active{color:var(--primary)}
+  .bottom-nav .nav-item .icon{font-size:22px}
+
+  /* ------ 主容器 ------ */
+  #app{min-height:100vh;display:flex;flex-direction:column}
+  .page{flex:1;padding-bottom:72px}
+  .page.no-tabbar{padding-bottom:0}
+  .page-content{padding:12px}
+
+  /* ------ 通用组件 ------ */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 18px;border-radius:20px;font-size:14px;font-weight:500;transition:all .2s;cursor:pointer;border:1px solid transparent}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:active{background:var(--primary-dark)}
+  .btn-outline{background:#fff;color:var(--primary);border-color:var(--primary)}
+  .btn-outline:active{background:var(--primary-light)}
+  .btn-text{color:var(--primary);padding:6px 10px}
+  .btn-danger{background:var(--danger);color:#fff}
+  .btn-block{width:100%}
+
+  .card{background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .divider{height:1px;background:var(--border);margin:12px 0}
+  .chip{display:inline-flex;align-items:center;padding:4px 12px;border-radius:16px;background:var(--surface-2);color:var(--text-2);font-size:12px;cursor:pointer;transition:all .2s}
+  .chip:hover,.chip.active{background:var(--primary-light);color:var(--primary)}
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:var(--surface-2);color:var(--text-2)}
+  .tag-primary{background:var(--primary-light);color:var(--primary)}
+  .tag-danger{background:#fde8e7;color:var(--danger)}
+  .tag-live{background:#fde7eb;color:#fb7299}
+  .vip-badge{background:linear-gradient(135deg,#f8d578,#e0a34a);color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600}
+  .level-badge{background:linear-gradient(90deg,#fb7299,#00aeec);color:#fff;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600}
+
+  .input{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:14px;outline:none;transition:border-color .2s}
+  .input:focus{border-color:var(--primary)}
+  .input.lg{height:48px;font-size:16px}
+  textarea.input{height:auto;min-height:80px;padding:10px 12px}
+
+  /* ------ 视频卡片 ------ */
+  .video-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:12px}
+  .video-card{background:var(--surface);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .2s}
+  .video-card:active{transform:scale(.97)}
+  .video-card .cover{position:relative;padding-top:56%;background:var(--surface-2);overflow:hidden}
+  .video-card .cover img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+  .video-card .cover .duration{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.7);color:#fff;padding:2px 6px;border-radius:3px;font-size:11px}
+  .video-card .cover .play-icon{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:rgba(0,0,0,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;opacity:0;transition:opacity .2s}
+  .video-card:hover .play-icon{opacity:1}
+  .video-card .info{padding:8px 10px}
+  .video-card .title{font-size:13px;font-weight:500;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .video-card .meta{font-size:11px;color:var(--text-3);margin-top:4px;display:flex;gap:8px;align-items:center}
+
+  /* ------ 列表项 ------ */
+  .list{background:var(--surface)}
+  .list-item{display:flex;align-items:center;padding:12px 16px;gap:12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+  .list-item:active{background:var(--surface-2)}
+  .list-item:last-child{border-bottom:none}
+  .list-item .item-icon{font-size:22px;color:var(--text-2);width:24px;text-align:center}
+  .list-item .item-title{font-size:15px;flex:1}
+  .list-item .item-sub{font-size:12px;color:var(--text-3);margin-top:2px}
+  .list-item .item-arrow{color:var(--text-3);font-size:18px}
+  .list-item.danger .item-title{color:var(--danger)}
+
+  /* ------ 媒体列表 ------ */
+  .media-tile{display:flex;gap:10px;padding:10px;background:var(--surface);cursor:pointer}
+  .media-tile .cover{width:120px;height:72px;flex-shrink:0;border-radius:6px;background:var(--surface-2);overflow:hidden;position:relative}
+  .media-tile .cover img{width:100%;height:100%;object-fit:cover}
+  .media-tile .cover .duration{position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.7);color:#fff;padding:1px 5px;border-radius:3px;font-size:10px}
+  .media-tile .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .media-tile .title{font-size:14px;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .media-tile .author{font-size:12px;color:var(--text-3)}
+  .media-tile .stats{font-size:11px;color:var(--text-3)}
+
+  /* ------ 加载/空态 ------ */
+  .center{display:flex;align-items:center;justify-content:center}
+  .center-col{display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .empty{padding:80px 20px;color:var(--text-3);text-align:center}
+  .loading{padding:30px;text-align:center;color:var(--text-3);font-size:13px}
+  .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+  .spinner-sm{width:16px;height:16px;border-width:2px}
+  .spinner-lg{width:40px;height:40px;border-width:3px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ------ Toast / Dialog / Sheet ------ */
+  .toast-container{position:fixed;top:72px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:200;pointer-events:none}
+  .toast{background:rgba(24,25,28,.9);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;animation:toast-in .2s ease}
+  @keyframes toast-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:150;padding:20px}
+  .modal{background:#fff;border-radius:14px;padding:20px;max-width:320px;width:100%}
+  .modal h3{font-size:16px;margin-bottom:8px}
+  .modal p{font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.5}
+  .modal .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+  .bottom-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
+  .bottom-sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:14px 14px 0 0;z-index:151;max-height:70vh;overflow-y:auto}
+  .bottom-sheet .handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 4px}
+
+  /* ------ Tab ------ */
+  .tab-bar{display:flex;background:#fff;border-bottom:1px solid var(--border)}
+  .tab-bar .tab{flex:1;text-align:center;padding:12px;color:var(--text-2);font-size:14px;border-bottom:2px solid transparent;cursor:pointer;transition:all .2s}
+  .tab-bar .tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+  /* ------ 错误页 ------ */
+  .error-box{padding:40px;text-align:center}
+  .error-box .msg{color:var(--danger);margin-bottom:12px;word-break:break-all}
+
+  /* ------ 搜索 ------ */
+  .search-header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+  .search-box{flex:1;height:36px;background:var(--surface-2);border-radius:18px;display:flex;align-items:center;padding:0 12px;gap:8px}
+  .search-box .icon{color:var(--text-3);font-size:16px}
+  .search-box input{flex:1;height:100%;background:none;border:none;outline:none;font-size:14px;color:var(--text-1)}
+  .hot-section{padding:16px}
+  .hot-section h3{font-size:15px;margin-bottom:12px}
+  .hot-tags{display:flex;flex-wrap:wrap;gap:8px}
+  .suggest-list{background:#fff;border-top:1px solid var(--border)}
+  .suggest-item{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer}
+  .suggest-item:last-child{border-bottom:none}
+  .suggest-item .icon{color:var(--text-3)}
+
+  /* ------ 视频播放器 ------ */
+  .player-wrap{position:relative;background:#000;width:100%;aspect-ratio:16/9;max-height:60vh}
+  .player-wrap video{width:100%;height:100%;display:block}
+  .player-controls{position:absolute;bottom:0;left:0;right:0;padding:8px 12px;background:linear-gradient(to top,rgba(0,0,0,.7),transparent);color:#fff;display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .3s}
+  .player-wrap:hover .player-controls,.player-wrap.fullscreen .player-controls{opacity:1}
+  .player-controls button{color:#fff;font-size:18px;background:none;border:none;padding:4px}
+  .player-controls .time{font-size:12px;font-variant-numeric:tabular-nums}
+  .player-controls .progress{flex:1;height:3px;background:rgba(255,255,255,.3);border-radius:2px;cursor:pointer;position:relative}
+  .player-controls .progress .buffered{position:absolute;top:0;left:0;height:100%;background:rgba(255,255,255,.4);border-radius:2px}
+  .player-controls .progress .played{position:absolute;top:0;left:0;height:100%;background:var(--primary);border-radius:2px}
+  .quality-menu{position:absolute;bottom:44px;right:12px;background:rgba(24,25,28,.9);border-radius:8px;padding:6px 0;min-width:140px;color:#fff;z-index:10}
+  .quality-menu .item{padding:8px 14px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .quality-menu .item.active{color:var(--primary)}
+  .danmaku-canvas{position:absolute;inset:0;pointer-events:none}
+
+  /* ------ 视频详情 ------ */
+  .video-meta{padding:12px 16px;background:#fff}
+  .video-meta .title{font-size:17px;font-weight:600;line-height:1.3}
+  .video-meta .stats{font-size:12px;color:var(--text-3);margin-top:6px}
+  .video-owner{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border-top:1px solid var(--border)}
+  .avatar{width:48px;height:48px;border-radius:50%;background:var(--surface-2);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:22px}
+  .avatar.sm{width:32px;height:32px;font-size:14px}
+  .avatar.lg{width:64px;height:64px;font-size:28px}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+  .video-actions{display:flex;background:#fff;border-top:1px solid var(--border)}
+  .action-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;color:var(--text-2);transition:color .2s}
+  .action-btn:active{color:var(--primary)}
+  .action-btn.liked{color:var(--danger)}
+  .action-btn.coined{color:var(--warn)}
+  .action-btn.collected{color:var(--primary)}
+  .action-btn .icon{font-size:22px}
+  .action-btn .label{font-size:11px}
+  .video-desc{padding:12px 16px;background:#fff;margin-top:8px;font-size:13px;color:var(--text-2);line-height:1.6}
+  .video-pages{background:#fff;margin-top:8px}
+  .video-pages .header{padding:12px 16px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .page-list{max-height:240px;overflow-y:auto}
+  .page-item{display:flex;padding:10px 16px;gap:10px;cursor:pointer;font-size:13px;align-items:center}
+  .page-item.active{background:var(--primary-light);color:var(--primary)}
+  .page-item .no{width:28px;color:var(--text-3);font-variant-numeric:tabular-nums}
+  .page-item .name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .page-item .dur{color:var(--text-3);font-size:12px}
+
+  /* ------ 评论 ------ */
+  .comment-section{background:#fff;padding:12px 16px;margin-top:8px}
+  .comment-section h3{font-size:15px;margin-bottom:12px}
+  .comment-item{padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:10px}
+  .comment-item:last-child{border-bottom:none}
+  .comment-item .body{flex:1;min-width:0}
+  .comment-item .name{font-size:13px;color:var(--primary);font-weight:500}
+  .comment-item .text{font-size:14px;color:var(--text-1);margin-top:4px;line-height:1.5}
+  .comment-item .foot{font-size:11px;color:var(--text-3);margin-top:6px;display:flex;gap:12px}
+
+  /* ------ 直播卡片 ------ */
+  .live-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:12px}
+  .live-card{background:var(--surface);border-radius:10px;overflow:hidden}
+  .live-card .cover{position:relative;padding-top:56%;background:var(--surface-2)}
+  .live-card .cover img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+  .live-card .cover .live-tag{position:absolute;top:6px;left:6px;background:#fb7299;color:#fff;font-size:10px;padding:2px 6px;border-radius:3px;font-weight:600}
+  .live-card .cover .online{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:3px}
+  .live-card .info{padding:6px 8px}
+  .live-card .title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .live-card .sub{font-size:11px;color:var(--text-3);margin-top:2px}
+
+  /* ------ 空间 ------ */
+  .space-header{padding:24px 16px;background:linear-gradient(135deg,#fff5f7 0%,#e6f7fe 100%);text-align:center}
+  .space-header .avatar-lg{width:80px;height:80px;margin:0 auto 12px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+  .space-header .name{font-size:18px;font-weight:700}
+  .space-header .sign{font-size:12px;color:var(--text-2);margin-top:6px;padding:0 20px}
+  .space-header .stats{display:flex;justify-content:center;gap:24px;margin-top:16px}
+  .space-header .stats .stat .num{font-weight:700;font-size:16px}
+  .space-header .stats .stat .lbl{font-size:11px;color:var(--text-3)}
+
+  /* ------ 聊天 ------ */
+  .chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 52px)}
+  .chat-list{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+  .chat-msg{display:flex;gap:8px;max-width:80%}
+  .chat-msg.mine{align-self:flex-end;flex-direction:row-reverse}
+  .chat-msg .bubble{padding:9px 14px;border-radius:14px;font-size:14px;line-height:1.45;word-break:break-word}
+  .chat-msg:not(.mine) .bubble{background:#fff;border-top-left-radius:4px}
+  .chat-msg.mine .bubble{background:var(--primary);color:#fff;border-top-right-radius:4px}
+  .chat-msg.system{align-self:center;max-width:100%}
+  .chat-msg.system .bubble{background:transparent;color:var(--text-3);font-size:12px;padding:4px 8px}
+  .chat-input{padding:8px 12px;background:#fff;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end}
+  .chat-input textarea{flex:1;border:none;background:var(--surface-2);border-radius:20px;padding:8px 14px;font-size:14px;outline:none;min-height:38px;max-height:120px;resize:none}
+  .chat-input button{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-size:18px}
+  .chat-input button:disabled{opacity:.4}
+
+  /* ------ 登录 ------ */
+  .login-center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{background:#fff;border-radius:14px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow:0 2px 20px rgba(0,0,0,.08)}
+  .login-card h1{font-size:22px;margin-bottom:6px}
+  .login-card .sub{color:var(--text-3);font-size:13px;margin-bottom:24px}
+  .login-card .qr-area{width:200px;height:200px;background:#fff;border:1px solid var(--border);border-radius:10px;margin:0 auto;display:flex;align-items:center;justify-content:center}
+  .login-card .qr-area svg{width:100%;height:100%}
+  .login-card .qr-placeholder{color:var(--text-3);font-size:13px}
+  .login-card .status{font-size:13px;color:var(--text-2);margin-top:14px}
+  .login-tabs{display:flex;margin-bottom:20px;background:var(--surface-2);border-radius:8px;padding:3px}
+  .login-tabs .tab{flex:1;padding:8px;border-radius:6px;font-size:13px;color:var(--text-2);cursor:pointer;text-align:center}
+  .login-tabs .tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+
+  /* ------ 适配 ------ */
+  @media (min-width:768px){
+    .video-grid,.live-grid{grid-template-columns:repeat(4,1fr)}
+    .space-body{max-width:720px;margin:0 auto}
+  }
+  @media (min-width:1024px){
+    .video-grid,.live-grid{grid-template-columns:repeat(5,1fr)}
+  }
+
+  /* ------ 弹幕 ------ */
+  .danmaku-list{max-height:300px;overflow-y:auto;background:#fff}
+  .danmaku-row{padding:6px 12px;font-size:12px;color:var(--text-2);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center}
+  .danmaku-row .time{color:var(--text-3);font-size:11px;width:40px;flex-shrink:0;font-variant-numeric:tabular-nums}
+  .danmaku-row.active{background:var(--primary-light)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ========== CORE LAYER ========== */
+/* ----- Utils ----- */
+const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
+const fmt={
+  count(n){n=n||0;if(n<10000)return n+'';if(n<1e8)return+(n/10000).toFixed(1)+'万';return+(n/1e8).toFixed(1)+'亿'},
+  dur(s){s=s||0;const h=Math.floor(s/3600),m=Math.floor(s%3600/60),ss=s%60;const pad=x=>String(x).padStart(2,'0');return h>0?h+':'+pad(m)+':'+pad(ss):pad(m)+':'+pad(ss)},
+  timeAgo(s){if(!s)return'';const t=new Date(s*1000),d=Date.now()-s*1000;const m=Math.floor(d/60000);if(m<1)return'刚刚';if(m<60)return m+'分钟前';const h=Math.floor(m/60);if(h<24)return h+'小时前';const day=Math.floor(h/24);if(day<30)return day+'天前';return (t.getMonth()+1)+'月'+t.getDate()+'日'},
+  escape(html){return String(html).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'<','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
+};
+
+/* ----- Toast ----- */
+const Toast={show(msg,dur=2000){
+  let c=document.querySelector('.toast-container');
+  if(!c){c=document.createElement('div');c.className='toast-container';document.body.appendChild(c)}
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-10px)';t.style.transition='all .2s';setTimeout(()=>t.remove(),220)},dur);
+}};
+
+/* ----- Modal / Sheet ----- */
+function confirmDialog(title,msg,onOk){
+  const o=document.createElement('div');o.className='modal-overlay';o.innerHTML=
+    `<div class="modal"><h3>${title}</h3><p>${msg}</p><div class="modal-actions">
+      <button class="btn btn-outline" id="__cancel">取消</button>
+      <button class="btn btn-primary" id="__ok">确定</button></div></div>`;
+  document.body.appendChild(o);
+  o.querySelector('#__cancel').onclick=()=>o.remove();
+  o.querySelector('#__ok').onclick=()=>{o.remove();onOk&&onOk()};
+  o.addEventListener('click',e=>{if(e.target===o)o.remove()});
+}
+function bottomSheet(title,htmlBuilder){
+  const o=document.createElement('div');o.className='bottom-sheet-overlay';
+  const s=document.createElement('div');s.className='bottom-sheet';
+  s.innerHTML=`<div class="handle"></div>${title?`<div style="padding:4px 16px 12px;font-weight:600;border-bottom:1px solid var(--border)">${title}</div>`:''}`;
+  const body=document.createElement('div');body.style.padding='4px 0 20px';
+  s.appendChild(body);document.body.appendChild(o);document.body.appendChild(s);
+  htmlBuilder&&htmlBuilder(body);
+  const close=()=>{o.remove();s.remove()};
+  o.onclick=close;
+  return close;
+}
+
+/* ----- Cookie Store (localStorage) ----- */
+const CookieStore={
+  KEY:'biliflex_web_cookies',
+  save(c){localStorage.setItem(this.KEY,c||'')},
+  load(){return localStorage.getItem(this.KEY)||''},
+  clear(){localStorage.removeItem(this.KEY)},
+  get(name){const m=Object.fromEntries(this.load().split(';').map(s=>{const i=s.indexOf('=');return i>0?[s.substring(0,i).trim(),s.substring(i+1).trim()]:[s.trim(),'']}));return m[name]||null},
+  get csrf(){return this.get('bili_jct')||''},
+  get sessdata(){return this.get('SESSDATA')||''},
+  get mid(){return parseInt(this.get('DedeUserID')||'0',10)},
+  get loggedIn(){return this.csrf.length>0}
+};
+const AccountStore={
+  KEY:'biliflex_web_session',
+  save(s){localStorage.setItem(this.KEY,JSON.stringify(s))},
+  load(){try{return JSON.parse(localStorage.getItem(this.KEY))||{}}catch(e){return{}}},
+  clear(){localStorage.removeItem(this.KEY);CookieStore.clear()},
+  get session(){return this.load()},
+  get isLoggedIn(){return CookieStore.loggedIn}
+};
+</script>
+<script>
+/* ----- WBI Signer (MD5 + mixinKey) ----- */
+(function(){
+const TAB=[46,47,18,2,53,8,23,32,15,50,10,31,58,3,45,35,27,43,5,49,33,9,42,19,29,28,14,39,12,38,41,13,37,48,7,16,24,55,40,61,26,17,0,1,60,51,30,4,22,25,54,21,56,59,6,63,57,62,11,36,20,34,44,52];
+let _imgKey=null,_subKey=null;
+function md5(str){
+  // 实现一个简化但正确的 MD5
+  function encode(s){return unescape(encodeURIComponent(s))}
+  function rotateLeft(lValue,iShiftBits){return(lValue<<iShiftBits)|(lValue>>>(32-iShiftBits))}
+  function addUnsigned(lX,lY){var lX4=lX&0x40000000,lY4=lY&0x40000000,lX8=lX&0x80000000,lY8=lY&0x80000000,lResult=(lX&0x3FFFFFFF)+(lY&0x3FFFFFFF);if(lX4&lY4)return lResult^0x80000000^lX8^lY8;if(lX4|lY4){if(lResult&0x40000000)return lResult^0xC0000000^lX8^lY8;return lResult^0x40000000^lX8^lY8}return lResult^lX8^lY8}
+  function f(x,y,z){return(x&y)|(~x&z)}function g(x,y,z){return(x&z)|(y&~z)}function h(x,y,z){return x^y^z}function i(x,y,z){return y^(x|~z)}
+  function ff(a,b,c,d,x,s,ac){a=addUnsigned(a,addUnsigned(addUnsigned(f(b,c,d),x),ac));return addUnsigned(rotateLeft(a,s),b)}
+  function gg(a,b,c,d,x,s,ac){a=addUnsigned(a,addUnsigned(addUnsigned(g(b,c,d),x),ac));return addUnsigned(rotateLeft(a,s),b)}
+  function hh(a,b,c,d,x,s,ac){a=addUnsigned(a,addUnsigned(addUnsigned(h(b,c,d),x),ac));return addUnsigned(rotateLeft(a,s),b)}
+  function ii(a,b,c,d,x,s,ac){a=addUnsigned(a,addUnsigned(addUnsigned(i(b,c,d),x),ac));return addUnsigned(rotateLeft(a,s),b)}
+  function convertToWordArray(s){var lWordCount;var lMessageLength=s.length;var lNumberOfWordsTempOne=lMessageLength+8;var lNumberOfWordsTempTwo=(lNumberOfWordsTempOne-(lNumberOfWordsTempOne%64))/64;var lNumberOfWords=(lNumberOfWordsTempTwo+1)*16;var lWordArray=new Array(lNumberOfWords-1);var lBytePosition=0;var lByteCount=0;while(lByteCount<lMessageLength){lWordCount=(lByteCount-(lByteCount%4))/4;lBytePosition=(lByteCount%4)*8;lWordArray[lWordCount]=(lWordArray[lWordCount]|(encode(s.charCodeAt(lByteCount))<<lBytePosition));lByteCount++}lWordCount=(lByteCount-(lByteCount%4))/4;lBytePosition=(lByteCount%4)*8;lWordArray[lWordCount]=lWordArray[lWordCount]|(0x80<<lBytePosition);lWordArray[lNumberOfWords-2]=lMessageLength<<3;lWordArray[lNumberOfWords-1]=lMessageLength>>>29;return lWordArray}
+  function wordToHex(lValue){let wordToHexValue="",wordToHexValueTemp="",lByte,lCount;for(lCount=0;lCount<=3;lCount++){lByte=(lValue>>>(lCount*8))&255;wordToHexValueTemp="0"+lByte.toString(16);wordToHexValue+=wordToHexValueTemp.slice(-2)}return wordToHexValue}
+  let x=[];let k,aa,bb,cc,dd,a,b,c,d,s11=7,s12=12,s13=17,s14=22,s21=5,s22=9,s23=14,s24=20,s31=4,s32=11,s33=16,s34=23,s41=6,s42=10,s43=15,s44=21;const str=encode(s);x=convertToWordArray(str);a=0x67452301;b=0xEFCDAB89;c=0x98BADCFE;d=0x10325476;for(k=0;k<x.length;k+=16){aa=a;bb=b;cc=c;dd=d;a=ff(a,b,c,d,x[k+0],s11,0xD76AA478);d=ff(d,a,b,c,x[k+1],s12,0xE8C7B756);c=ff(c,d,a,b,x[k+2],s13,0x242070DB);b=ff(b,c,d,a,x[k+3],s14,0xC1BDCEEE);a=ff(a,b,c,d,x[k+4],s11,0xF57C0FAF);d=ff(d,a,b,c,x[k+5],s12,0x4787C62A);c=ff(c,d,a,b,x[k+6],s13,0xA8304613);b=ff(b,c,d,a,x[k+7],s14,0xFD469501);a=ff(a,b,c,d,x[k+8],s11,0x698098D8);d=ff(d,a,b,c,x[k+9],s12,0x8B44F7AF);c=ff(c,d,a,b,x[k+10],s13,0xFFFF5BB1);b=ff(b,c,d,a,x[k+11],s14,0x895CD7BE);a=ff(a,b,c,d,x[k+12],s11,0x6B901122);d=ff(d,a,b,c,x[k+13],s12,0xFD987193);c=ff(c,d,a,b,x[k+14],s13,0xA679438E);b=ff(b,c,d,a,x[k+15],s14,0x49B40821);a=gg(a,b,c,d,x[k+1],s21,0xF61E2562);d=gg(d,a,b,c,x[k+6],s22,0xC040B340);c=gg(c,d,a,b,x[k+11],s23,0x265E5A51);b=gg(b,c,d,a,x[k+0],s24,0xE9B6C7AA);a=gg(a,b,c,d,x[k+5],s21,0xD62F105D);d=gg(d,a,b,c,x[k+10],s22,0x02441453);c=gg(c,d,a,b,x[k+15],s23,0xD8A1E681);b=gg(b,c,d,a,x[k+4],s24,0xE7D3FBC8);a=gg(a,b,c,d,x[k+9],s21,0x21E1CDE6);d=gg(d,a,b,c,x[k+14],s22,0xC33707D6);c=gg(c,d,a,b,x[k+3],s23,0xF4D50D87);b=gg(b,c,d,a,x[k+8],s24,0x455A14ED);a=gg(a,b,c,d,x[k+13],s21,0xA9E3E905);d=gg(d,a,b,c,x[k+2],s22,0xFCEFA3F8);c=gg(c,d,a,b,x[k+7],s23,0x676F02D9);b=gg(b,c,d,a,x[k+12],s24,0x8D2A4C8A);a=hh(a,b,c,d,x[k+5],s31,0xFFFA3942);d=hh(d,a,b,c,x[k+8],s32,0x8771F681);c=hh(c,d,a,b,x[k+11],s33,0x6D9D6122);b=hh(b,c,d,a,x[k+14],s34,0xFDE5380C);a=hh(a,b,c,d,x[k+1],s31,0xA4BEEA44);d=hh(d,a,b,c,x[k+4],s32,0x4BDECFA9);c=hh(c,d,a,b,x[k+7],s33,0xF6BB4B60);b=hh(b,c,d,a,x[k+10],s34,0xBEBFBC70);a=hh(a,b,c,d,x[k+13],s31,0x289B7EC6);d=hh(d,a,b,c,x[k+0],s32,0xEAA127FA);c=hh(c,d,a,b,x[k+3],s33,0xD4EF3085);b=hh(b,c,d,a,x[k+6],s34,0x04881D05);a=hh(a,b,c,d,x[k+9],s31,0xD9D4D039);d=hh(d,a,b,c,x[k+12],s32,0xE6DB99E5);c=hh(c,d,a,b,x[k+15],s33,0x1FA27CF8);b=hh(b,c,d,a,x[k+2],s34,0xC4AC5665);a=ii(a,b,c,d,x[k+0],s41,0xF4292244);d=ii(d,a,b,c,x[k+7],s42,0x432AFF97);c=ii(c,d,a,b,x[k+14],s43,0xAB9423A7);b=ii(b,c,d,a,x[k+5],s44,0xFC93A039);a=ii(a,b,c,d,x[k+12],s41,0x655B59C3);d=ii(d,a,b,c,x[k+3],s42,0x8F0CCC92);c=ii(c,d,a,b,x[k+10],s43,0xFFEFF47D);b=ii(b,c,d,a,x[k+1],s44,0x85845DD1);a=ii(a,b,c,d,x[k+8],s41,0x6FA87E4F);d=ii(d,a,b,c,x[k+15],s42,0xFE2CE6E0);c=ii(c,d,a,b,x[k+6],s43,0xA3014314);b=ii(b,c,d,a,x[k+13],s44,0x4E0811A1);a=ii(a,b,c,d,x[k+4],s41,0xF7537E82);d=ii(d,a,b,c,x[k+11],s42,0xBD3AF235);c=ii(c,d,a,b,x[k+2],s43,0x2AD7D2BB);b=ii(b,c,d,a,x[k+9],s44,0xEB86D391);a=addUnsigned(a,aa);b=addUnsigned(b,bb);c=addUnsigned(c,cc);d=addUnsigned(d,dd)}return(wordToHex(a)+wordToHex(b)+wordToHex(c)+wordToHex(d)).toLowerCase()}
+}
+
+function extractKey(url){if(!url)return'';const segs=url.split('/'),file=segs[segs.length-1];const i=file.indexOf('.');return i<0?file:file.substring(0,i)}
+const Wbi={
+  refresh(imgUrl,subUrl){_imgKey=extractKey(imgUrl);_subKey=extractKey(subUrl)},
+  get mixinKey(){if(!_imgKey||!_subKey)return null;const raw=_imgKey+_subKey;let buf='';for(const i of TAB){if(i<raw.length)buf+=raw[i]}return buf.substring(0,32)},
+  sign(params){const k=this.mixinKey;const p={...params,wts:Math.floor(Date.now()/1000)};if(!k)return p;const sorted=Object.keys(p).sort();let buf='';sorted.forEach((k,i)=>{let v=String(p[k]);v=v.replace(/[!'()*]/g,'');buf+=(i?'&':'')+k+'='+encodeURIComponent(v)});p.w_rid=md5(buf+k);return p}
+};
+window.Wbi=Wbi;
+})();
+</script>
+<script>
+/* ----- Bili API (fetch + Cookie + WBI) ----- */
+const Hosts={
+  api:'https://api.bilibili.com',app:'https://app.bilibili.com',passport:'https://passport.bilibili.com',
+  live:'https://api.live.bilibili.com',vc:'https://api.vc.bilibili.com',search:'https://s.search.bilibili.com'
+};
+async function biliFetch(url,opts={}){
+  // 添加 Cookie 和 UA
+  const headers={...(opts.headers||{}),'User-Agent':'Mozilla/5.0','Referer':'https://www.bilibili.com'};
+  // 同源 fetch 自动带 cookie；跨域 (passport) 需 credentials
+  const u=new URL(url,Hosts.api);
+  if(CookieStore.load())headers['Cookie']=CookieStore.load();
+  const resp=await fetch(u.toString(),{...opts,headers,credentials:'include'});
+  const ct=resp.headers.get('content-type')||'';
+  if(ct.includes('application/json')||ct.includes('javascript'))return resp.json();
+  return resp.text();
+}
+async function biliGet(path,{query,wbi,host}={}){
+  let q={...(query||{})};
+  if(wbi)q=Wbi.sign(q);
+  const u=(host||Hosts.api)+path;
+  if(Object.keys(q).length)u+=(u.includes('?')?'&':'?')+new URLSearchParams(q);
+  const data=await biliFetch(u);
+  if(data.code!==0)throw new Error(data.message||'请求失败 ['+data.code+']');
+  return data.data;
+}
+async function biliPostForm(path,data,{host}={}){
+  const u=(host||Hosts.api)+path;
+  const b=new URLSearchParams();
+  Object.entries(data||{}).forEach(([k,v])=>b.append(k,v));
+  const r=await biliFetch(u,{method:'POST',body:b.toString(),headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}});
+  if(typeof r==='string')throw new Error('响应异常');
+  if(r.code!==0)throw new Error(r.message||'请求失败 ['+r.code+']');
+  return r.data;
+}
+async function fetchBytes(path,query,host){
+  let u=(host||Hosts.api)+path;
+  if(query&&Object.keys(query).length)u+='?'+new URLSearchParams(query);
+  const headers={};
+  if(CookieStore.load())headers['Cookie']=CookieStore.load();
+  const resp=await fetch(u,{headers,credentials:'include'});
+  const ab=await resp.arrayBuffer();return new Uint8Array(ab);
+}
+</script>
