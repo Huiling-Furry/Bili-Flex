@@ -146,6 +146,9 @@ img{display:block;max-width:100%}
 .msg-card-info{padding:8px 10px}
 .msg-card-title{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .msg-card-meta{font-size:11px;color:var(--text3);margin-top:4px}
+/* 系统推送类卡片（UP更新视频/系统通知/动态·专栏）在聊天窗口中居中 */
+.msg-push{display:flex;flex-direction:column;align-items:center;margin:14px 0}
+.msg-push-tag{font-size:10px;color:var(--text3);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1px 8px;margin-bottom:6px}
 .chat-input-row{padding:10px 12px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
 .chat-input{flex:1;background:var(--bg);border:none;border-radius:20px;padding:9px 14px;font-size:14px;outline:none}
 .chat-send{background:var(--pink);color:#fff;border:none;padding:8px 16px;border-radius:18px;font-size:13px;font-weight:600;cursor:pointer}
@@ -1191,33 +1194,40 @@ function renderChatMsg(m){
   if(m.type==='system')return `<div class="msg-system"><span>${m.text}</span></div>`;
   if(m.type==='tip')return `<div class="msg-system"><span>${m.text}</span></div>`;
   const selfCls=m.self?'self':'';
-  let body='';
+  let body='', pushTag='';
   if(m.type==='text'){
     body=`<div class="msg-bubble">${m.text}</div>`;
   }else if(m.type==='image'){
     body=`<div class="msg-bubble" style="padding:4px"><img src="${m.url}" style="width:180px;border-radius:8px;display:block"></div>`;
   }else if(m.type==='video'){
+    // UP 更新视频自动推送
+    pushTag='UP主更新视频';
     body=`<div class="msg-card" onclick="showToast('打开视频：${m.title}')">
       <img src="${m.cover}" alt=""><div class="msg-card-info">
       <div class="msg-card-title">${m.title}</div>
       <div class="msg-card-meta">⏱ ${m.duration} · UP: ${m.up}</div></div></div>`;
   }else if(m.type==='article'){
+    // 动态 · 专栏推送
+    pushTag='动态 · 专栏';
     body=`<div class="msg-card" onclick="showToast('打开专栏')">
       <img src="${m.cover}" alt="" style="aspect-ratio:16/9">
       <div class="msg-card-info"><div class="msg-card-title">${m.title}</div>
       <div class="msg-card-meta">📝 ${m.summary}</div></div></div>`;
   }else if(m.type==='share'){
+    pushTag=m.source||'动态';
     body=`<div class="msg-card" onclick="showToast('打开${m.source}')">
       <img src="${m.cover}" alt=""><div class="msg-card-info">
       <div class="msg-card-title">${m.title}</div>
       <div class="msg-card-meta">${m.source} · ${m.up}</div></div></div>`;
   }else if(m.type==='notify'){
+    pushTag='系统通知';
     body=`<div class="msg-card" style="max-width:280px;padding:12px">
       <div style="font-weight:700;font-size:14px;margin-bottom:6px">${m.title}</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${m.text}</div>
       ${m.modules.map(mod=>`<div style="display:flex;gap:8px;font-size:11px;margin:3px 0"><span style="color:var(--text3);min-width:60px">${mod.title}</span><span>${mod.detail}</span></div>`).join('')}
       </div>`;
   }else if(m.type==='recommend'){
+    pushTag='推荐';
     body=`<div class="msg-card" style="max-width:280px;padding:10px">
       <div style="font-weight:700;font-size:13px;margin-bottom:8px">${m.mainTitle}</div>
       ${m.cards.map(c=>`<div style="display:flex;gap:8px;margin-bottom:8px;cursor:pointer" onclick="showToast('打开：${c.title}')">
@@ -1226,6 +1236,8 @@ function renderChatMsg(m){
         <div style="font-size:10px;color:var(--text3);margin-top:3px">${c.meta1} · ${c.meta2}</div></div></div>`).join('')}
       </div>`;
   }
+  // 系统推送类卡片居中显示，普通私信气泡保持左右对齐
+  if(pushTag)return `<div class="msg-push"><span class="msg-push-tag">${pushTag}</span>${body}</div>`;
   return `<div class="msg-row ${selfCls}"><div class="msg-avatar-sm"></div>${body}</div>`;
 }
 function sendChatMsg(){
