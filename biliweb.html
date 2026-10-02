@@ -141,7 +141,7 @@ img{display:block;max-width:100%}
 .msg-system{text-align:center;margin:12px 0}
 .msg-system span{background:var(--border);color:var(--text3);font-size:11px;padding:3px 10px;border-radius:10px}
 .msg-time-label{text-align:center;font-size:11px;color:var(--text3);margin:8px 0}
-.msg-card{background:var(--card);border-radius:10px;overflow:hidden;max-width:260px;cursor:pointer;box-shadow:var(--shadow)}
+.msg-card{background:var(--card);border-radius:10px;overflow:hidden;max-width:min(440px,92%);width:100%;cursor:pointer;box-shadow:var(--shadow)}
 .msg-card img{width:100%;aspect-ratio:16/9;object-fit:cover}
 .msg-card-info{padding:8px 10px}
 .msg-card-title{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -322,10 +322,6 @@ img{display:block;max-width:100%}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       首页
     </div>
-    <div class="tab-item" data-tab="search" onclick="switchTab('search')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      搜索
-    </div>
     <div class="tab-item" data-tab="live" onclick="switchTab('live')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="m17 2-5 4-5-4"/></svg>
       直播
@@ -495,6 +491,10 @@ function fmtDuration(sec){
   const m=Math.floor(sec/60),s=sec%60;
   return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
 }
+// HTML 转义（真实接口返回的文本直接插入 innerHTML 前先转义）
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
 
 // ============ 真实 API 加载 ============
 async function loadVideos(){
@@ -564,7 +564,8 @@ async function loadLives(){
 
 const hotWords = ['S14总决赛','原神4.5版本','回锅肉做法','赛博朋克装修','AI写代码','黑洞科普','手工耿','100元生活一周','航拍中国','老番茄新作'];
 
-const sessions = [
+// 默认演示数据；登录后会由真实私信 API 覆盖
+let sessions = [
   {id:1,name:'老番茄',avatar:'',last:'这个视频太搞笑了哈哈哈哈',time:'14:32',unread:2},
   {id:2,name:'某幻君',avatar:'',last:'[视频] 【4K60帧】这可能是B站最丝滑的混剪',time:'12:15',unread:0},
   {id:3,name:'花少北',avatar:'',last:'好的，那我们明天见',time:'昨天',unread:0},
@@ -572,9 +573,10 @@ const sessions = [
   {id:5,name:'LexBurner',avatar:'',last:'[图片]',time:'周一',unread:0},
   {id:6,name:'中国BOY',avatar:'',last:'[专栏] 我花了30天做了一个会自己写代码的AI',time:'10-01',unread:0},
 ];
+const _demoSessions = sessions.slice(); // 退出登录后恢复演示数据
 
-// 每个会话的消息（包含各种类型）
-const chatMessages = {
+// 每个会话的消息（包含各种类型）；登录后按会话拉取真实消息覆盖
+let chatMessages = {
   1: [
     {type:'time',text:'14:20'},
     {type:'text',self:false,text:'在吗？看了你的新视频，太牛了！'},
@@ -703,7 +705,7 @@ function switchTab(tab){
   document.getElementById('view-'+tab).classList.add('active');
   document.querySelectorAll('.tab-item').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
   if(tab==='search')setTimeout(()=>document.getElementById('search-input').focus(),100);
-  if(tab==='message'){renderSessions();if(window.innerWidth<768)closeChat()}
+  if(tab==='message'){ensureSessions();if(window.innerWidth<768)closeChat()}
 }
 function switchHomeTab(tab){
   currentHomeTab=tab;
@@ -1160,23 +1162,128 @@ function bottomSheet(title,buildHtml){
 // ============ 覆盖旧的假函数 ============
 function cycleQuality(){showQualityMenu()}
 
-// ============ 私信 ============
+// ============ 私信（真实 API + 演示数据降级） ============
+// 真实接口：
+//   会话列表  api.vc.bilibili.com/session_svr/v1/session_svr/get_sessions
+//   聊天记录  api.vc.bilibili.com/svr_sync/v1/svr_sync/fetch_session_msgs
+//   用户名片  api.vc.bilibili.com/account/v1/user/cards
+// 均需登录态；未登录或请求失败时自动降级到上面的演示数据。
+let _realSessionsTried=false;
+
 function renderSessions(){
   document.getElementById('session-items').innerHTML=sessions.map(s=>`
     <div class="session-item ${currentSession===s.id?'active':''}" onclick="openSession(${s.id})">
-      <div class="session-avatar">${s.unread>0?`<span class="session-unread">${s.unread>99?'99+':s.unread}</span>`:''}</div>
-      <div class="session-info"><div class="session-name">${s.name}</div><div class="session-last">${s.last}</div></div>
-      <span class="session-time">${s.time}</span></div>`).join('');
+      <div class="session-avatar">${s.face?`<img src="${esc(s.face)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`:''}${s.unread>0?`<span class="session-unread">${s.unread>99?'99+':s.unread}</span>`:''}</div>
+      <div class="session-info"><div class="session-name">${esc(s.name)}</div><div class="session-last">${esc(s.last)}</div></div>
+      <span class="session-time">${esc(s.time)}</span></div>`).join('');
+}
+
+function fmtSessionTime(ts){
+  if(!ts) return '';
+  const d=new Date(ts*1000),now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  if(d.toDateString()===now.toDateString()) return pad(d.getHours())+':'+pad(d.getMinutes());
+  const y=new Date(now.getTime()-86400000);
+  if(d.toDateString()===y.toDateString()) return '昨天';
+  return (d.getMonth()+1)+'-'+d.getDate();
+}
+function previewLastMsg(lm){
+  if(!lm||!lm.content) return '[消息]';
+  let c={};try{c=JSON.parse(lm.content)}catch(e){return String(lm.content)}
+  switch(lm.msg_type){
+    case 1: return c.content||'[消息]';
+    case 2: return '[图片]';
+    case 7: return '[视频] '+(c.title||'');
+    case 10: return c.content||'[系统消息]';
+    default: return c.content||c.title||'[消息]';
+  }
+}
+// 会话列表真实接口
+async function fetchRealSessions(){
+  if(!CookieStore.loggedIn) return null;
+  const d=await biliFetch('https://api.vc.bilibili.com/session_svr/v1/session_svr/get_sessions?session_type=1&group_id=0&sort_rule=2&build=0&mobi_app=web',{},8000);
+  const list=(d.data&&d.data.session_list)||[];
+  if(!list.length) return null;
+  const items=list.slice(0,20);
+  // 批量取用户名片（失败时用 UID 兜底）
+  const cards={};
+  try{
+    const uids=items.map(s=>s.talker_id).join(',');
+    const r=await biliFetch('https://api.vc.bilibili.com/account/v1/user/cards?uids='+uids,{},8000);
+    (r.data||[]).forEach(u=>{cards[u.uid]={name:u.name,face:u.face}});
+  }catch(e){}
+  return items.map(s=>{
+    const u=cards[s.talker_id]||{};
+    const lm=s.last_msg||{};
+    return {
+      id:s.talker_id,
+      name:u.name||('UID '+s.talker_id),
+      face:u.face||'',
+      last:previewLastMsg(lm),
+      time:fmtSessionTime(s.at_time||lm.timestamp),
+      unread:s.unread_count||0,
+      real:true
+    };
+  });
+}
+// 单条消息 → 渲染结构
+function mapRealMsg(m,myMid){
+  const self=String(m.sender_uid)===String(myMid);
+  let c={};try{c=JSON.parse(m.content||'{}')}catch(e){c={content:m.content}}
+  const fix=u=>(u||'').replace(/^http:/,'https:');
+  switch(m.msg_type){
+    case 1:  return {type:'text',self,text:esc(c.content||'')};
+    case 2:  return {type:'image',self,url:fix(c.url),w:c.width,h:c.height};
+    case 5:  return {type:'system',text:'对方撤回了一条消息'};
+    case 7:  return {type:'share',self,source:c.source===2?'视频':'动态',title:esc(c.title||c.bvid||'分享内容'),cover:fix(c.cover),up:esc(c.author||'')};
+    case 10: return {type:'system',text:esc(c.content||'')};
+    default:
+      if(c.content) return {type:'text',self,text:esc(c.content)};
+      if(c.title)   return {type:'share',self,source:'动态',title:esc(c.title),cover:fix(c.cover),up:esc(c.author||'')};
+      return null;
+  }
+}
+// 聊天记录真实接口
+async function fetchRealMessages(talkerId){
+  const myMid=CookieStore.mid;
+  const d=await biliFetch('https://api.vc.bilibili.com/svr_sync/v1/svr_sync/fetch_session_msgs?session_type=1&talker_id='+talkerId+'&size=30&build=0&mobi_app=web',{},8000);
+  const list=(d.data&&d.data.messages)||[];
+  if(!list.length) return null;
+  return list.slice().reverse().map(m=>mapRealMsg(m,myMid)).filter(Boolean);
+}
+// 进入消息页：先渲染（演示数据），再尝试拉真实会话
+async function ensureSessions(){
+  renderSessions();
+  if(_realSessionsTried) return;
+  _realSessionsTried=true;
+  if(!CookieStore.loggedIn) return;
+  try{
+    const real=await fetchRealSessions();
+    if(real&&real.length){sessions=real;renderSessions();showToast('已加载真实私信 '+real.length+' 条')}
+  }catch(e){console.warn('真实私信接口不可用，使用演示数据：',e.message)}
 }
 function openSession(id){
   currentSession=id;
   const s=sessions.find(x=>x.id===id);
-  document.getElementById('chat-title').textContent=s.name;
+  document.getElementById('chat-title').textContent=s?s.name:'聊天';
   document.getElementById('session-list').classList.add('hidden');
   document.getElementById('chat-panel').classList.add('active');
-  renderChatMessages();
+  if(s&&s.real){
+    const c=document.getElementById('chat-messages');
+    c.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)"><div class="spinner"></div><div style="margin-top:10px;font-size:12px">加载聊天记录...</div></div>';
+    fetchRealMessages(id).then(msgs=>{
+      if(msgs&&msgs.length) chatMessages[id]=msgs;
+      if(currentSession===id) renderChatMessages();
+    }).catch(e=>{
+      console.warn('聊天记录接口不可用：',e.message);
+      if(currentSession===id) renderChatMessages();
+    });
+  }else{
+    renderChatMessages();
+  }
   // 清除未读
-  s.unread=0;renderSessions();
+  if(s)s.unread=0;
+  renderSessions();
 }
 function closeChat(){
   document.getElementById('session-list').classList.remove('hidden');
@@ -1221,14 +1328,14 @@ function renderChatMsg(m){
       <div class="msg-card-meta">${m.source} · ${m.up}</div></div></div>`;
   }else if(m.type==='notify'){
     pushTag='系统通知';
-    body=`<div class="msg-card" style="max-width:280px;padding:12px">
+    body=`<div class="msg-card" style="max-width:min(440px,92%);width:100%;padding:12px">
       <div style="font-weight:700;font-size:14px;margin-bottom:6px">${m.title}</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${m.text}</div>
       ${m.modules.map(mod=>`<div style="display:flex;gap:8px;font-size:11px;margin:3px 0"><span style="color:var(--text3);min-width:60px">${mod.title}</span><span>${mod.detail}</span></div>`).join('')}
       </div>`;
   }else if(m.type==='recommend'){
     pushTag='推荐';
-    body=`<div class="msg-card" style="max-width:280px;padding:10px">
+    body=`<div class="msg-card" style="max-width:min(440px,92%);width:100%;padding:10px">
       <div style="font-weight:700;font-size:13px;margin-bottom:8px">${m.mainTitle}</div>
       ${m.cards.map(c=>`<div style="display:flex;gap:8px;margin-bottom:8px;cursor:pointer" onclick="showToast('打开：${c.title}')">
         <img src="${c.cover}" style="width:100px;height:56px;object-fit:cover;border-radius:6px">
@@ -1280,6 +1387,7 @@ async function loginByCookie(cookieStr){
       localStorage.setItem(LS_SESSION,JSON.stringify(sess));
       _wbiKeys=null;await getWbiKeys();
       showToast('登录成功：'+sess.uname);
+      _realSessionsTried=false; // 下次进入消息页拉取真实私信
       refreshProfile();
       return true;
     }else{
@@ -1287,7 +1395,7 @@ async function loginByCookie(cookieStr){
     }
   }catch(e){showToast('登录失败：'+e.message);return false}
 }
-async function logout(){CookieStore.clear();refreshProfile();showToast('已退出登录')}
+async function logout(){CookieStore.clear();_realSessionsTried=false;sessions=_demoSessions.slice();renderSessions();refreshProfile();showToast('已退出登录')}
 
 // 带 Cookie 的 fetch（biliFetch 已经透传，这里只是注释）
 // 使用 CookieStore.load() 作为 Cookie header
