@@ -1,7 +1,6 @@
 # BiliFlex
 
 独立架构的 B 站 Flutter 第三方客户端，参考 [bilibili-API-collect](https://github.com/pskdje/bilibili-API-collect) 的接口规范实现。
-**不基于 PiliPlus 的代码与架构**：技术栈、目录分层、接口命名、状态管理均独立设计。
 
 ## 技术栈
 
@@ -63,17 +62,6 @@ lib/
 - WBI 签名自动注入（mixinkey 重排 + md5）
 - 登录态持久化（SESSDATA/bili_jct/DedeUserID 等自动注入 Cookie 头）
 
-## 与 PiliPlus 的独立性说明
-
-| 维度 | PiliPlus | BiliFlex |
-|---|---|---|
-| 状态管理 | GetX / meedu 框架 | flutter_riverpod |
-| 接口常量组织 | 单文件 Api 类 300+ 静态字段 | 按业务域分仓（Repo），端点集中在 endpoints.dart |
-| WBI 签名 | 内嵌在拦截器 | 独立 WbiSigner 类，可单测 |
-| 路由 | GetX 命名路由 | 原生 Navigator + onGenerateRoute |
-| 目录分层 | 按页面平铺 | core/data/features 三层 |
-| 播放器 | media_kit 全功能 | 占位（沙箱无 platform channel），接口已预留 |
-| 配色 | B 站粉 | 蓝紫自有配色 |
 
 ## 编译验证
 
