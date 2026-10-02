@@ -124,7 +124,7 @@ class BiliDio {
     return Uint8List.fromList(resp.data ?? const []);
   }
 
-  /// POST 请求，表单形式。
+  /// POST 请求，表单形式（application/x-www-form-urlencoded）。
   Future<BiliResp> postForm(
     String path, {
     Map<String, dynamic>? data,
@@ -132,7 +132,7 @@ class BiliDio {
   }) async {
     final resp = await _dio.post<dynamic>(
       path,
-      data: FormData.fromMap(data ?? {}),
+      data: data ?? {},
       queryParameters: query,
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
