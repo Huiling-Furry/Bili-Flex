@@ -2,8 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/bili_dio.dart';
+import '../../data/repositories/account_repo.dart';
 
-/// 启动页：初始化 Dio、拉 nav，决定跳登录还是主页。
+/// 启动页：初始化 Dio、拉 nav 刷新 WBI 密钥，决定跳登录还是主页。
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
@@ -22,7 +23,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     await BiliDio.instance.init();
     // 拉一次 nav 刷新 WBI 密钥（即使未登录也会返回默认密钥）
     try {
-      await BiliDio.instance.raw.get('/x/web-interface/nav');
+      await AccountRepo().nav();
     } catch (_) {}
     if (mounted) {
       Navigator.of(context).pushReplacementNamed(

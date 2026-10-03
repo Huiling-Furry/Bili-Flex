@@ -75,7 +75,7 @@ class AccountRepo {
   /// 轮询二维码状态。
   /// 返回 data.code 语义：0=登录成功 86038=二维码过期 86039=未确认，
   /// 同时带回本次响应的 Set-Cookie（登录成功时携带 SESSDATA 等）。
-  Future<({int code, String message, Map<String, List<String>> setCookie})>
+  Future<({int code, String message, List<String> setCookie})>
       pollQrcode(String authCode) async {
     final resp = await _dio.raw.get<dynamic>(
       Endpoints.qrcodePoll,
@@ -88,22 +88,20 @@ class AccountRepo {
     final body = resp.data is String ? jsonDecode(resp.data as String) : resp.data;
     final data = (body is Map ? body['data'] : null) as Map<String, dynamic>? ??
         const <String, dynamic>{};
-    final headers = <String, List<String>>{};
-    resp.headers.map.forEach((k, v) => headers[k.toLowerCase()] = v);
+    // 只取 set-cookie 响应头
+    final setCookie = resp.headers.map['set-cookie'] ?? const <String>[];
     return (
       code: (data['code'] ?? -1) as int,
       message: (data['message'] ?? data['msg'] ?? '') as String,
-      setCookie: headers,
+      setCookie: setCookie,
     );
   }
 
-  /// 从扫码成功的 Set-Cookie 里提取 SESSDATA。
-  /// dio 把 cookies 放在 response.headers.map['set-cookie']。
-  Future<void> afterQrcodeLogin(Map<String, List<String>> setCookie) async {
-    final cookies = setCookie.values.expand((e) => e).toList();
+  /// 从扫码成功的 Set-Cookie 列表里提取 SESSDATA 等关键字段。
+  Future<void> afterQrcodeLogin(List<String> setCookieHeaders) async {
     // 从 Set-Cookie 提取 kv
     final kv = <String, String>{};
-    for (final c in cookies) {
+    for (final c in setCookieHeaders) {
       final first = c.split(';').first;
       final idx = first.indexOf('=');
       if (idx > 0) {

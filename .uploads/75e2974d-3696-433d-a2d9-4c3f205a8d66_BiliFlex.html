@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BiliFlex - B站第三方客户端原型</title>
+<style>
+/* ============ 全局 ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --pink:#FB7299;--pink-light:#FF85AD;--pink-dark:#E85A82;
+  --blue:#00AEEC;--bg:#F4F5F7;--card:#fff;--text:#18191C;
+  --text2:#61666D;--text3:#9499A0;--border:#E3E5E7;
+  --shadow:0 2px 8px rgba(0,0,0,.06);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+img{display:block;max-width:100%}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+
+/* ============ 布局 ============ */
+.app{max-width:480px;margin:0 auto;background:var(--bg);min-height:100vh;position:relative;padding-bottom:60px}
+@media(min-width:768px){.app{max-width:100%;padding-bottom:0;padding-left:72px}}
+.view{display:none;min-height:100vh}
+.view.active{display:block}
+
+/* ============ 顶部栏 ============ */
+.topbar{position:sticky;top:0;z-index:100;background:var(--card);padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.topbar .logo{font-size:20px;font-weight:800;color:var(--pink);letter-spacing:-0.5px}
+.topbar .search-box{flex:1;background:var(--bg);border-radius:20px;padding:7px 14px;font-size:13px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:6px}
+.topbar .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--blue));flex-shrink:0}
+
+/* ============ 底部导航 ============ */
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:200;padding:4px 0 8px}
+@media(min-width:768px){.tabbar{position:fixed;left:0;top:0;transform:none;width:72px;height:100vh;flex-direction:column;justify-content:flex-start;padding-top:20px;border-right:1px solid var(--border);border-top:none}}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;cursor:pointer;color:var(--text3);font-size:10px;transition:color .2s}
+@media(min-width:768px){.tab-item{flex:none;padding:14px 0;font-size:10px}}
+.tab-item.active{color:var(--pink)}
+.tab-item svg{width:22px;height:22px}
+@media(min-width:768px){.tab-item svg{width:24px;height:24px}}
+
+/* ============ 首页 ============ */
+.home-tabs{display:flex;background:var(--card);padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:90}
+.home-tab{padding:12px 16px;font-size:14px;color:var(--text2);cursor:pointer;position:relative;font-weight:500}
+.home-tab.active{color:var(--pink);font-weight:700}
+.home-tab.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:20px;height:3px;background:var(--pink);border-radius:2px}
+.video-grid{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:768px){.video-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;padding:20px}}
+.video-card{background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.video-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.video-cover{position:relative;aspect-ratio:16/10;background:#ddd}
+.video-cover img{width:100%;height:100%;object-fit:cover}
+.video-duration{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:1px 5px;border-radius:3px}
+.video-info{padding:8px 10px 10px}
+.video-title{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.video-meta{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--text3)}
+.video-meta .up{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ============ 视频详情页 ============ */
+.video-detail{position:fixed;top:0;left:0;right:0;bottom:0;z-index:300;background:var(--bg);overflow-y:auto;display:none}
+.video-detail.active{display:block}
+.player-area{aspect-ratio:16/9;background:#000;position:relative;display:flex;align-items:center;justify-content:center}
+.player-area .play-btn{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px)}
+.player-area .play-btn svg{width:28px;height:28px;fill:#fff;margin-left:3px}
+.player-controls{position:absolute;bottom:0;left:0;right:0;padding:8px 12px;background:linear-gradient(transparent,rgba(0,0,0,.7));display:flex;align-items:center;gap:10px}
+.player-controls .progress{flex:1;height:4px;background:rgba(255,255,255,.3);border-radius:2px;cursor:pointer;position:relative}
+.player-controls .progress-fill{height:100%;background:var(--pink);border-radius:2px;width:35%}
+.player-controls .time{color:#fff;font-size:11px;white-space:nowrap}
+.player-controls .ctrl-btn{color:#fff;cursor:pointer;font-size:12px;white-space:nowrap}
+.video-detail-body{padding:14px 16px}
+.vd-title{font-size:17px;font-weight:700;line-height:1.4}
+.vd-stats{display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--text3)}
+.vd-up{display:flex;align-items:center;gap:10px;margin:14px 0;padding:12px;background:var(--card);border-radius:10px}
+.vd-up .up-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--blue))}
+.vd-up .up-info{flex:1}
+.vd-up .up-name{font-size:14px;font-weight:600}
+.vd-up .up-fans{font-size:11px;color:var(--text3)}
+.vd-up .follow-btn{background:var(--pink);color:#fff;border:none;padding:6px 16px;border-radius:16px;font-size:12px;font-weight:600;cursor:pointer}
+.vd-actions{display:flex;justify-content:space-around;padding:14px;background:var(--card);border-radius:10px;margin-bottom:14px}
+.vd-action{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--text2);font-size:11px}
+.vd-action svg{width:22px;height:22px}
+.vd-action.liked{color:var(--pink)}
+.vd-section-title{font-size:15px;font-weight:700;margin:16px 0 10px}
+.back-btn{position:absolute;top:12px;left:12px;z-index:10;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff}
+
+/* ============ 搜索页 ============ */
+.search-input-row{padding:10px 16px;background:var(--card);display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border)}
+.search-input{flex:1;background:var(--bg);border:none;border-radius:20px;padding:9px 16px;font-size:14px;outline:none}
+.search-cancel{color:var(--pink);font-size:14px;cursor:pointer;font-weight:500}
+.hot-search{padding:16px}
+.hot-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.hot-list{display:flex;flex-wrap:wrap;gap:8px}
+.hot-tag{background:var(--card);padding:7px 14px;border-radius:16px;font-size:13px;cursor:pointer;color:var(--text2);border:1px solid var(--border)}
+.hot-tag .rank{color:var(--pink);font-weight:700;margin-right:4px}
+.search-result{padding:10px 16px}
+
+/* ============ 直播页 ============ */
+.live-grid{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:768px){.live-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;padding:20px}}
+.live-card{background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer}
+.live-cover{position:relative;aspect-ratio:16/10;background:#ddd}
+.live-cover img{width:100%;height:100%;object-fit:cover}
+.live-badge{position:absolute;top:6px;left:6px;background:var(--pink);color:#fff;font-size:10px;padding:2px 6px;border-radius:3px;font-weight:600;display:flex;align-items:center;gap:3px}
+.live-badge::before{content:'';width:5px;height:5px;background:#fff;border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.live-viewers{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:1px 5px;border-radius:3px}
+.live-info{padding:8px 10px 10px}
+.live-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-up{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* ============ 私信页 ============ */
+.msg-layout{display:flex;height:calc(100vh - 60px)}
+@media(min-width:768px){.msg-layout{height:100vh}}
+.msg-session-list{width:100%;border-right:1px solid var(--border);background:var(--card);overflow-y:auto}
+.msg-session-list.hidden{display:none}
+@media(min-width:768px){.msg-session-list{width:280px;flex-shrink:0}}
+.msg-chat-panel{flex:1;display:none;flex-direction:column;background:var(--bg)}
+.msg-chat-panel.active{display:flex}
+@media(min-width:768px){.msg-chat-panel{display:flex}}
+.session-item{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);position:relative}
+.session-item:hover{background:var(--bg)}
+.session-item.active{background:#FFF0F5}
+.session-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--blue));flex-shrink:0;position:relative}
+.session-unread{position:absolute;top:-2px;right:-2px;background:var(--pink);color:#fff;font-size:10px;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;font-weight:600}
+.session-info{flex:1;min-width:0}
+.session-name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.session-last{font-size:12px;color:var(--text3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.session-time{font-size:11px;color:var(--text3);flex-shrink:0}
+.chat-header{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.chat-back{cursor:pointer;color:var(--text2);display:flex}
+@media(min-width:768px){.chat-back{display:none}}
+.chat-title{font-size:15px;font-weight:600;flex:1}
+.chat-messages{flex:1;overflow-y:auto;padding:14px 12px}
+.msg-row{display:flex;margin-bottom:14px;gap:8px}
+.msg-row.self{flex-direction:row-reverse}
+.msg-avatar-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--blue));flex-shrink:0}
+.msg-bubble{max-width:70%;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.5;word-break:break-word}
+.msg-row:not(.self) .msg-bubble{background:var(--card);border-bottom-left-radius:4px}
+.msg-row.self .msg-bubble{background:var(--pink);color:#fff;border-bottom-right-radius:4px}
+.msg-system{text-align:center;margin:12px 0}
+.msg-system span{background:var(--border);color:var(--text3);font-size:11px;padding:3px 10px;border-radius:10px}
+.msg-time-label{text-align:center;font-size:11px;color:var(--text3);margin:8px 0}
+.msg-card{background:var(--card);border-radius:10px;overflow:hidden;max-width:260px;cursor:pointer;box-shadow:var(--shadow)}
+.msg-card img{width:100%;aspect-ratio:16/9;object-fit:cover}
+.msg-card-info{padding:8px 10px}
+.msg-card-title{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.msg-card-meta{font-size:11px;color:var(--text3);margin-top:4px}
+.chat-input-row{padding:10px 12px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.chat-input{flex:1;background:var(--bg);border:none;border-radius:20px;padding:9px 14px;font-size:14px;outline:none}
+.chat-send{background:var(--pink);color:#fff;border:none;padding:8px 16px;border-radius:18px;font-size:13px;font-weight:600;cursor:pointer}
+
+/* ============ 我的页 ============ */
+.profile-header{background:linear-gradient(135deg,var(--pink),var(--pink-dark));padding:30px 20px 40px;color:#fff}
+.profile-user{display:flex;align-items:center;gap:14px}
+.profile-avatar{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.3);border:2px solid rgba(255,255,255,.5)}
+.profile-name{font-size:20px;font-weight:700}
+.profile-uid{font-size:12px;opacity:.8;margin-top:2px}
+.profile-stats{display:flex;justify-content:space-around;margin-top:20px;text-align:center}
+.profile-stat-num{font-size:18px;font-weight:700}
+.profile-stat-label{font-size:11px;opacity:.8;margin-top:2px}
+.profile-menu{margin:-20px 14px 14px;background:var(--card);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.profile-menu-item{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--border)}
+.profile-menu-item:last-child{border-bottom:none}
+.profile-menu-item svg{width:20px;height:20px;color:var(--text2)}
+.profile-menu-item span{flex:1;font-size:14px}
+.profile-menu-item .arrow{color:var(--text3)}
+
+/* ============ 弹幕 ============ */
+.danmaku-layer{position:absolute;top:0;left:0;right:0;bottom:40px;overflow:hidden;pointer-events:none}
+.danmaku-item{position:absolute;white-space:nowrap;color:#fff;font-size:14px;text-shadow:1px 1px 2px rgba(0,0,0,.8);animation:danmaku-scroll 8s linear forwards}
+@keyframes danmaku-scroll{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+
+/* ============ Toast ============ */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ 首页 ============ -->
+  <div class="view active" id="view-home">
+    <div class="topbar">
+      <div class="logo">BiliFlex</div>
+      <div class="search-box" onclick="switchTab('search')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        搜索你感兴趣的内容
+      </div>
+      <div class="avatar"></div>
+    </div>
+    <div class="home-tabs">
+      <div class="home-tab active" data-tab="recommend" onclick="switchHomeTab('recommend')">推荐</div>
+      <div class="home-tab" data-tab="popular" onclick="switchHomeTab('popular')">热门</div>
+    </div>
+    <div class="video-grid" id="video-grid"></div>
+  </div>
+
+  <!-- ============ 搜索页 ============ -->
+  <div class="view" id="view-search">
+    <div class="search-input-row">
+      <input class="search-input" id="search-input" placeholder="搜索视频、UP主、番剧..." onkeydown="if(event.key==='Enter')doSearch()">
+      <span class="search-cancel" onclick="switchTab('home')">取消</span>
+    </div>
+    <div class="hot-search" id="hot-search">
+      <div class="hot-title">🔥 热门搜索</div>
+      <div class="hot-list" id="hot-list"></div>
+    </div>
+    <div class="search-result" id="search-result" style="display:none"></div>
+  </div>
+
+  <!-- ============ 直播页 ============ -->
+  <div class="view" id="view-live">
+    <div class="topbar"><div class="logo">直播</div></div>
+    <div class="live-grid" id="live-grid"></div>
+  </div>
+
+  <!-- ============ 消息页 ============ -->
+  <div class="view" id="view-message">
+    <div class="msg-layout">
+      <div class="msg-session-list" id="session-list">
+        <div class="topbar" style="position:sticky;top:0"><div class="logo">消息</div></div>
+        <div id="session-items"></div>
+      </div>
+      <div class="msg-chat-panel" id="chat-panel">
+        <div class="chat-header">
+          <span class="chat-back" onclick="closeChat()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="m15 18-6-6 6-6"/></svg>
+          </span>
+          <span class="chat-title" id="chat-title">聊天</span>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" placeholder="发送消息..." onkeydown="if(event.key==='Enter')sendChatMsg()">
+          <button class="chat-send" onclick="sendChatMsg()">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 我的页 ============ -->
+  <div class="view" id="view-profile">
+    <div class="profile-header">
+      <div class="profile-user">
+        <div class="profile-avatar"></div>
+        <div>
+          <div class="profile-name">BiliFlex用户</div>
+          <div class="profile-uid">UID: 10086520</div>
+        </div>
+      </div>
+      <div class="profile-stats">
+        <div><div class="profile-stat-num">128</div><div class="profile-stat-label">关注</div></div>
+        <div><div class="profile-stat-num">2.3万</div><div class="profile-stat-label">粉丝</div></div>
+        <div><div class="profile-stat-num">56</div><div class="profile-stat-label">硬币</div></div>
+        <div><div class="profile-stat-num">12</div><div class="profile-stat-label">收藏夹</div></div>
+      </div>
+    </div>
+    <div class="profile-menu">
+      <div class="profile-menu-item" onclick="showToast('观看历史')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span>观看历史</span><span class="arrow">›</span>
+      </div>
+      <div class="profile-menu-item" onclick="showToast('我的收藏')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+        <span>我的收藏</span><span class="arrow">›</span>
+      </div>
+      <div class="profile-menu-item" onclick="showToast('稍后再看')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span>稍后再看</span><span class="arrow">›</span>
+      </div>
+      <div class="profile-menu-item" onclick="switchTab('message')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>私信</span><span class="arrow">›</span>
+      </div>
+      <div class="profile-menu-item" onclick="showToast('设置')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>设置</span><span class="arrow">›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 视频详情页（全屏覆盖） ============ -->
+  <div class="video-detail" id="video-detail">
+    <div class="player-area" id="player-area">
+      <div class="back-btn" onclick="closeVideo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="m15 18-6-6 6-6"/></svg>
+      </div>
+      <div class="danmaku-layer" id="danmaku-layer"></div>
+      <div class="play-btn" id="play-btn" onclick="togglePlay()">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <div class="player-controls">
+        <span class="ctrl-btn" onclick="togglePlay()" id="play-ctrl">▶</span>
+        <span class="time" id="play-time">01:23 / 04:05</span>
+        <div class="progress" onclick="seekVideo(event)"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="ctrl-btn" onclick="cycleSpeed()" id="speed-btn">1.0x</span>
+        <span class="ctrl-btn" onclick="toggleDanmaku()" id="danmaku-btn">弹</span>
+        <span class="ctrl-btn" onclick="cycleQuality()" id="quality-btn">高清</span>
+      </div>
+    </div>
+    <div class="video-detail-body">
+      <div class="vd-title" id="vd-title"></div>
+      <div class="vd-stats">
+        <span id="vd-views"></span>
+        <span id="vd-danmaku"></span>
+        <span id="vd-date"></span>
+      </div>
+      <div class="vd-up">
+        <div class="up-avatar"></div>
+        <div class="up-info">
+          <div class="up-name" id="vd-up"></div>
+          <div class="up-fans">128万粉丝</div>
+        </div>
+        <button class="follow-btn" onclick="this.textContent=this.textContent==='关注'?'已关注':'关注';showToast('操作成功')">关注</button>
+      </div>
+      <div class="vd-actions">
+        <div class="vd-action" id="act-like" onclick="toggleLike()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.34-8.68A1.5 1.5 0 0 1 14 2a2 2 0 0 1 2 2v1.88z"/></svg>
+          <span id="like-count">1.2万</span>
+        </div>
+        <div class="vd-action" onclick="showToast('投币成功')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 22v-4"/><rect x="4" y="6" width="16" height="12" rx="2"/></svg>
+          <span>3456</span>
+        </div>
+        <div class="vd-action" onclick="showToast('收藏成功')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          <span>8901</span>
+        </div>
+        <div class="vd-action" onclick="showToast('分享成功')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/></svg>
+          <span>分享</span>
+        </div>
+      </div>
+      <div class="vd-section-title">相关推荐</div>
+      <div class="video-grid" id="related-grid" style="padding:0"></div>
+    </div>
+  </div>
+
+  <!-- ============ 底部导航 ============ -->
+  <div class="tabbar">
+    <div class="tab-item active" data-tab="home" onclick="switchTab('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      首页
+    </div>
+    <div class="tab-item" data-tab="search" onclick="switchTab('search')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      搜索
+    </div>
+    <div class="tab-item" data-tab="live" onclick="switchTab('live')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="m17 2-5 4-5-4"/></svg>
+      直播
+    </div>
+    <div class="tab-item" data-tab="message" onclick="switchTab('message')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      消息
+    </div>
+    <div class="tab-item" data-tab="profile" onclick="switchTab('profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      我的
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+// ============ Mock 数据 ============
+const COVERS = [
+  'https://picsum.photos/seed/bv1/400/250','https://picsum.photos/seed/bv2/400/250',
+  'https://picsum.photos/seed/bv3/400/250','https://picsum.photos/seed/bv4/400/250',
+  'https://picsum.photos/seed/bv5/400/250','https://picsum.photos/seed/bv6/400/250',
+  'https://picsum.photos/seed/bv7/400/250','https://picsum.photos/seed/bv8/400/250',
+  'https://picsum.photos/seed/bv9/400/250','https://picsum.photos/seed/bv10/400/250',
+  'https://picsum.photos/seed/bv11/400/250','https://picsum.photos/seed/bv12/400/250',
+];
+const UPS = ['老番茄','某幻君','花少北','LexBurner','中国BOY超级大猩猩','徐大虾咯','啊吗粽','在下哲别','力元君','雨哥到处跑'];
+const TITLES = [
+  '【4K60帧】这可能是B站最丝滑的混剪！看完直接起飞','我花了30天做了一个会自己写代码的AI，结果...',
+  '当我用AI复刻了全班同学的声音，老师当场愣住了','【硬核科普】黑洞里面到底是什么？用3D动画带你穿越视界',
+  '我在B站学了三年编程，现在月薪多少？真实数据分享','【美食作家王刚】厨师长教你做正宗回锅肉，肥而不腻入口即化',
+  '用1000个鼠标同时点击会发生什么？结局意想不到','【原神】4.5版本全角色强度排行榜，你的主C上榜了吗？',
+  '我把家里改造成了赛博朋克风格，邻居以为进了酒吧','【手工耿】我做了一个可以自动翻书的机器，读书人狂喜',
+  '挑战用100元在上海生活一周，最后竟然...','【航拍中国】4K超清！这就是我们的大好河山'
+];
+
+// 降级用 mock 数据（API 失败时使用）
+const mockVideos = TITLES.map((t,i)=>({
+  bvid:'BV1xx411c7m'+i, title:t, cover:COVERS[i%COVERS.length],
+  duration:['03:24','08:15','12:03','05:47','15:30','02:58','06:12','09:45','04:20','11:33','07:08','13:55'][i%12],
+  up:UPS[i%UPS.length], views:(Math.random()*300+10).toFixed(1)+'万', danmaku:(Math.random()*5+0.5).toFixed(1)+'千',
+  date:'2024-0'+(i%9+1)+'-'+(i%28+1)
+}));
+let videos = [...mockVideos];
+
+const mockLives = ['【英雄联盟】S14全球总决赛 决赛','【原神】4.5版本前瞻直播','【CS2】Major总决赛 NAVI vs FaZe',
+  '唱歌给你听~','【炉石传说】酒馆战棋上分','【我的世界】建造巨型城堡','【Apex】猎杀局','【画画】手绘原神角色'].map((t,i)=>({
+  title:t, cover:'https://picsum.photos/seed/live'+i+'/400/250',
+  up:UPS[i%UPS.length], viewers:(Math.random()*50+1).toFixed(1)+'万', category:['游戏','娱乐','生活','音乐'][i%4]
+}));
+let lives = [...mockLives];
+
+// ============ B站 API 基础设施 ============
+// CORS 代理列表（按优先级尝试）
+const CORS_PROXIES = [
+  url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+  url => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
+  url => 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url),
+];
+
+async function biliFetch(url, timeout=8000) {
+  let lastErr;
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      const resp = await fetch(proxy(url), {signal: controller.signal, headers: {'Referer':'https://www.bilibili.com','User-Agent':'Mozilla/5.0'}});
+      clearTimeout(timer);
+      if (!resp.ok) throw new Error('HTTP '+resp.status);
+      const text = await resp.text();
+      const data = JSON.parse(text);
+      if (data.code !== 0) throw new Error('API code '+data.code+': '+(data.message||''));
+      return data;
+    } catch(e) { lastErr = e; }
+  }
+  throw lastErr || new Error('所有代理均失败');
+}
+
+// MD5（纯 JS 实现，用于 WBI 签名）
+function md5(s){
+  function rh(n,j){var s='',md='0123456789abcdef';for(var i=0;i<j;i++)s+=md.charAt((n>>(i*4+4))&0x0f)+md.charAt((n>>(i*4))&0x0f);return s}
+  function ad(x,y){var l=(x&0xffff)+(y&0xffff);var m=(x>>16)+(y>>16)+(l>>16);return(m<<16)|(l&0xffff)}
+  function rl(n,c){return(n<<c)|(n>>>(32-c))}
+  function cm(q,a,b,x,s,t){return ad(rl(ad(ad(a,q),ad(x,t)),s),b)}
+  function ff(a,b,c,d,x,s,t){return cm((b&c)|((~b)&d),a,b,x,s,t)}
+  function gg(a,b,c,d,x,s,t){return cm((b&d)|(c&(~d)),a,b,x,s,t)}
+  function hh(a,b,c,d,x,s,t){return cm(b^c^d,a,b,x,s,t)}
+  function ii(a,b,c,d,x,s,t){return cm(c^(b|(~d)),a,b,x,s,t)}
+  function cv(s){var b=[];for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);if(c<128)b.push(c);else if(c<2048){b.push(192|(c>>6));b.push(128|(c&63))}else{b.push(224|(c>>12));b.push(128|((c>>6)&63));b.push(128|(c&63))}}return b}
+  var x=cv(s),a=1732584193,b=-271733879,c=-1732584194,d=271733878;
+  for(var i=0;i<x.length;i+=64){var o=x[i+14]|(x[i+15]<<8);x[i+14]=(o<<7)|(o>>>25);x[i+15]=o>>>9;
+    var aa=a,bb=b,cc=c,dd=d;
+    a=ff(a,b,c,d,x[i+0],7,-680876936);d=ff(d,a,b,c,x[i+1],12,-389564586);c=ff(c,d,a,b,x[i+2],17,606105819);b=ff(b,c,d,a,x[i+3],22,-1044525330);
+    a=ff(a,b,c,d,x[i+4],7,-176418897);d=ff(d,a,b,c,x[i+5],12,1200080426);c=ff(c,d,a,b,x[i+6],17,-1473231341);b=ff(b,c,d,a,x[i+7],22,-45705983);
+    a=ff(a,b,c,d,x[i+8],7,1770035416);d=ff(d,a,b,c,x[i+9],12,-1958414417);c=ff(c,d,a,b,x[i+10],17,-42063);b=ff(b,c,d,a,x[i+11],22,-1990404162);
+    a=ff(a,b,c,d,x[i+12],7,1804603682);d=ff(d,a,b,c,x[i+13],12,-40341101);c=ff(c,d,a,b,x[i+14],17,-1502002290);b=ff(b,c,d,a,x[i+15],22,1236535329);
+    a=gg(a,b,c,d,x[i+1],5,-165796510);d=gg(d,a,b,c,x[i+6],9,-1069501632);c=gg(c,d,a,b,x[i+11],14,643717713);b=gg(b,c,d,a,x[i+0],20,-373897302);
+    a=gg(a,b,c,d,x[i+5],5,-701558691);d=gg(d,a,b,c,x[i+10],9,38016083);c=gg(c,d,a,b,x[i+15],14,-660478335);b=gg(b,c,d,a,x[i+4],20,-405537848);
+    a=gg(a,b,c,d,x[i+9],5,568446438);d=gg(d,a,b,c,x[i+14],9,-1019803690);c=gg(c,d,a,b,x[i+3],14,-187363961);b=gg(b,c,d,a,x[i+8],20,1163531501);
+    a=gg(a,b,c,d,x[i+13],5,-1444681467);d=gg(d,a,b,c,x[i+2],9,-51403784);c=gg(c,d,a,b,x[i+7],14,1735328473);b=gg(b,c,d,a,x[i+12],20,-1926607734);
+    a=hh(a,b,c,d,x[i+5],4,-378558);d=hh(d,a,b,c,x[i+8],11,-2022574463);c=hh(c,d,a,b,x[i+11],16,1839030562);b=hh(b,c,d,a,x[i+14],23,-35309556);
+    a=hh(a,b,c,d,x[i+1],4,-1530992060);d=hh(d,a,b,c,x[i+4],11,1272893353);c=hh(c,d,a,b,x[i+7],16,-155497632);b=hh(b,c,d,a,x[i+10],23,-1094730640);
+    a=hh(a,b,c,d,x[i+13],4,681279174);d=hh(d,a,b,c,x[i+0],11,-358537222);c=hh(c,d,a,b,x[i+3],16,-722521979);b=hh(b,c,d,a,x[i+6],23,76029189);
+    a=hh(a,b,c,d,x[i+9],4,-640364487);d=hh(d,a,b,c,x[i+12],11,-421815835);c=hh(c,d,a,b,x[i+15],16,530742520);b=hh(b,c,d,a,x[i+2],23,-995338651);
+    a=ii(a,b,c,d,x[i+0],6,-198630844);d=ii(d,a,b,c,x[i+7],10,1126891415);c=ii(c,d,a,b,x[i+14],15,-1416354905);b=ii(b,c,d,a,x[i+5],21,-57434055);
+    a=ii(a,b,c,d,x[i+12],6,1700485571);d=ii(d,a,b,c,x[i+3],10,-1894986606);c=ii(c,d,a,b,x[i+10],15,-1051523);b=ii(b,c,d,a,x[i+1],21,-2054922799);
+    a=ii(a,b,c,d,x[i+8],6,1873313359);d=ii(d,a,b,c,x[i+15],10,-30611744);c=ii(c,d,a,b,x[i+6],15,-1560198380);b=ii(b,c,d,a,x[i+13],21,1309151649);
+    a=ii(a,b,c,d,x[i+4],6,-145523070);d=ii(d,a,b,c,x[i+11],10,-1120210379);c=ii(c,d,a,b,x[i+2],15,718787259);b=ii(b,c,d,a,x[i+9],21,-343485551);
+    a=ad(a,aa);b=ad(b,bb);c=ad(c,cc);d=ad(d,dd);
+  }
+  return rh(a,8)+rh(b,8)+rh(c,8)+rh(d,8);
+}
+
+// WBI 签名
+const MIXIN_KEY_ENC_TAB = [46,47,18,2,53,8,23,32,15,50,10,31,58,3,45,35,27,43,5,49,33,9,42,19,29,28,14,39,12,38,41,13,37,48,7,16,24,55,40,61,26,17,0,1,60,51,30,4,22,25,54,21,56,59,6,63,57,62,11,36,20,34,44,52];
+let _wbiKeys = null;
+async function getWbiKeys(){
+  if(_wbiKeys) return _wbiKeys;
+  const nav = await biliFetch('https://api.bilibili.com/x/web-interface/nav');
+  const imgUrl = nav.data.wbi_img.img_url;
+  const subUrl = nav.data.wbi_img.sub_url;
+  _wbiKeys = {
+    imgKey: imgUrl.split('/').pop().split('.')[0],
+    subKey: subUrl.split('/').pop().split('.')[0]
+  };
+  return _wbiKeys;
+}
+function getMixinKey(orig){return MIXIN_KEY_ENC_TAB.map(i=>orig[i]).join('').slice(0,32)}
+async function wbiSign(params){
+  const {imgKey,subKey} = await getWbiKeys();
+  const mixinKey = getMixinKey(imgKey+subKey);
+  const wts = Math.floor(Date.now()/1000);
+  const query = {...params, wts};
+  const sorted = {};
+  Object.keys(query).sort().forEach(k=>{sorted[k]=encodeURIComponent(query[k])});
+  const queryStr = Object.entries(sorted).map(([k,v])=>k+'='+v).join('&');
+  const w_rid = md5(queryStr+mixinKey);
+  return {...query, w_rid};
+}
+
+// 数字格式化
+function fmtNum(n){
+  if(n>=10000) return (n/10000).toFixed(1)+'万';
+  if(n>=1000) return (n/1000).toFixed(1)+'千';
+  return String(n);
+}
+function fmtDuration(sec){
+  if(!sec) return '00:00';
+  const m=Math.floor(sec/60),s=sec%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+// ============ 真实 API 加载 ============
+async function loadVideos(){
+  // 先立即显示降级数据，避免空白
+  videos = [...mockVideos];
+  renderVideos();
+  // 异步加载真实 API，成功则替换
+  try {
+    const data = await biliFetch('https://api.bilibili.com/x/web-interface/popular?ps=20&pn=1', 6000);
+    videos = data.data.list.map(item=>({
+      bvid: item.bvid,
+      title: item.title,
+      cover: item.pic + '@400w_250h.webp',
+      duration: fmtDuration(item.duration),
+      up: item.owner.name,
+      views: fmtNum(item.stat.view),
+      danmaku: fmtNum(item.stat.danmaku),
+      date: new Date(item.pubdate*1000).toLocaleDateString('zh-CN'),
+      desc: item.desc,
+      cid: item.cid,
+      aid: item.aid,
+    }));
+    if(currentHomeTab==='recommend') renderVideos();
+  } catch(e) {
+    console.warn('热门视频加载失败，保留降级数据:', e.message);
+  }
+}
+
+async function loadRanking(){
+  videos = [...mockVideos].reverse();
+  renderVideos();
+  try {
+    const data = await biliFetch('https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all', 6000);
+    videos = data.data.list.map(item=>({
+      bvid: item.bvid, title: item.title,
+      cover: item.pic+'@400w_250h.webp',
+      duration: fmtDuration(item.duration),
+      up: item.owner.name, views: fmtNum(item.stat.view),
+      danmaku: fmtNum(item.stat.danmaku),
+      date: new Date(item.pubdate*1000).toLocaleDateString('zh-CN'),
+      cid: item.cid, aid: item.aid,
+    }));
+    if(currentHomeTab==='popular') renderVideos();
+  } catch(e){
+    console.warn('排行榜加载失败，保留降级数据:', e.message);
+  }
+}
+
+async function loadLives(){
+  lives = [...mockLives];
+  renderLives();
+  try {
+    const data = await biliFetch('https://api.live.bilibili.com/xlive/web-interface/v1/second/getList?platform=web&parent_area_id=0&area_id=0&page=1', 6000);
+    lives = data.data.list.slice(0,12).map(item=>({
+      title: item.title,
+      cover: item.cover+'@400w_250h.webp',
+      up: item.uname,
+      viewers: fmtNum(item.online)+'人',
+      category: item.area_name,
+      roomid: item.roomid,
+    }));
+    renderLives();
+  } catch(e){
+    console.warn('直播加载失败，保留降级数据:', e.message);
+  }
+}
+
+const hotWords = ['S14总决赛','原神4.5版本','回锅肉做法','赛博朋克装修','AI写代码','黑洞科普','手工耿','100元生活一周','航拍中国','老番茄新作'];
+
+const sessions = [
+  {id:1,name:'老番茄',avatar:'',last:'这个视频太搞笑了哈哈哈哈',time:'14:32',unread:2},
+  {id:2,name:'某幻君',avatar:'',last:'[视频] 【4K60帧】这可能是B站最丝滑的混剪',time:'12:15',unread:0},
+  {id:3,name:'花少北',avatar:'',last:'好的，那我们明天见',time:'昨天',unread:0},
+  {id:4,name:'B站系统通知',avatar:'',last:'你的账号已通过实名认证',time:'昨天',unread:1},
+  {id:5,name:'LexBurner',avatar:'',last:'[图片]',time:'周一',unread:0},
+  {id:6,name:'中国BOY',avatar:'',last:'[专栏] 我花了30天做了一个会自己写代码的AI',time:'10-01',unread:0},
+];
+
+// 每个会话的消息（包含各种类型）
+const chatMessages = {
+  1: [
+    {type:'time',text:'14:20'},
+    {type:'text',self:false,text:'在吗？看了你的新视频，太牛了！'},
+    {type:'text',self:true,text:'哈哈谢谢支持！'},
+    {type:'text',self:false,text:'那个特效是怎么做的？能教我吗'},
+    {type:'text',self:true,text:'用的是AE，关键帧动画+粒子插件，我出个教程吧'},
+    {type:'system',text:'对方撤回了一条消息'},
+    {type:'video',self:false,title:'【教程】AE粒子特效从入门到精通',cover:COVERS[3],duration:'15:30',up:'老番茄'},
+    {type:'text',self:false,text:'这个视频太搞笑了哈哈哈哈'},
+  ],
+  2: [
+    {type:'time',text:'12:00'},
+    {type:'video',self:true,title:'【4K60帧】这可能是B站最丝滑的混剪！看完直接起飞',cover:COVERS[0],duration:'03:24',up:'某幻君'},
+    {type:'text',self:false,text:'哇这个混剪太丝滑了！'},
+    {type:'text',self:true,text:'花了一周做的，喜欢就好'},
+    {type:'article',self:false,title:'混剪技巧分享：如何让画面更丝滑',summary:'本文详细介绍了AE中关键帧插值、速度曲线、运动模糊等技巧...',cover:COVERS[5]},
+  ],
+  3: [
+    {type:'time',text:'昨天'},
+    {type:'text',self:false,text:'明天一起拍视频吗？'},
+    {type:'text',self:true,text:'好啊，几点？在哪集合？'},
+    {type:'text',self:false,text:'下午2点，老地方'},
+    {type:'text',self:true,text:'好的，那我们明天见'},
+  ],
+  4: [
+    {type:'time',text:'昨天'},
+    {type:'notify',title:'实名认证成功',text:'恭喜您，您的账号已通过实名认证',modules:[{title:'认证类型',detail:'身份证认证'},{title:'认证时间',detail:'2024-10-01 10:30'}]},
+    {type:'tip',text:'实名认证后可享受更多功能权益'},
+  ],
+  5: [
+    {type:'time',text:'周一'},
+    {type:'image',self:false,url:COVERS[7],w:400,h:300},
+    {type:'text',self:true,text:'这张图拍得不错！'},
+    {type:'text',self:false,text:'谢谢，用新相机拍的'},
+    {type:'share',self:false,source:'动态',title:'今天天气真好，出去拍了几张照片',cover:COVERS[8],up:'LexBurner'},
+  ],
+  6: [
+    {type:'time',text:'10-01'},
+    {type:'article',self:true,title:'我花了30天做了一个会自己写代码的AI，结果...',summary:'用GPT-4 API+本地知识库，做了一个能自动写Python代码的AI助手...',cover:COVERS[1]},
+    {type:'text',self:false,text:'这个AI太强了，能开源吗？'},
+    {type:'text',self:true,text:'已经放GitHub了，链接在评论区'},
+    {type:'recommend',self:false,mainTitle:'你可能感兴趣',cards:[
+      {title:'AI编程工具横评：Cursor vs Copilot vs Cline',cover:COVERS[2],meta1:'科技',meta2:'12.5万播放'},
+      {title:'从零搭建自己的AI助手，保姆级教程',cover:COVERS[4],meta1:'教程',meta2:'8.3万播放'},
+    ]},
+  ],
+};
+
+// ============ 状态 ============
+let currentTab='home', currentHomeTab='recommend', currentSession=null;
+let isPlaying=false, danmakuOn=true, currentSpeed=1, qualityIdx=0;
+const speeds=[0.5,0.75,1.0,1.25,1.5,2.0];
+const qualities=['流畅','标清','高清','超清','4K'];
+const danmakuTexts=['哈哈哈哈','前方高能','666','泪目','awsl','这也太强了','学到了','UP主牛逼','一键三连了','爷青回','名场面','弹幕护体'];
+
+// ============ 工具 ============
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function fmtViews(v){return v}
+
+// ============ 视频卡片渲染 ============
+function renderVideoCard(v){
+  return `<div class="video-card" onclick="openVideo('${v.bvid}')">
+    <div class="video-cover"><img src="${v.cover}" alt=""><span class="video-duration">${v.duration}</span></div>
+    <div class="video-info"><div class="video-title">${v.title}</div>
+    <div class="video-meta"><span class="up">${v.up}</span><span>▶ ${v.views}</span></div></div></div>`;
+}
+function renderVideos(){
+  document.getElementById('video-grid').innerHTML=videos.map(renderVideoCard).join('');
+}
+function renderRelated(){
+  document.getElementById('related-grid').innerHTML=videos.slice(0,6).map(renderVideoCard).join('');
+}
+
+// ============ 直播渲染 ============
+function renderLives(){
+  document.getElementById('live-grid').innerHTML=lives.map(l=>`
+    <div class="live-card" onclick="showToast('进入直播间：${l.title}')">
+    <div class="live-cover"><img src="${l.cover}" alt=""><span class="live-badge">直播中</span><span class="live-viewers">${l.viewers}</span></div>
+    <div class="live-info"><div class="live-title">${l.title}</div><div class="live-up">${l.up} · ${l.category}</div></div></div>`).join('');
+}
+
+// ============ 热搜渲染 ============
+function renderHot(){
+  document.getElementById('hot-list').innerHTML=hotWords.map((w,i)=>
+    `<div class="hot-tag" onclick="document.getElementById('search-input').value='${w}';doSearch()"><span class="rank">${i+1}</span>${w}</div>`).join('');
+}
+
+// ============ 搜索 ============
+async function doSearch(){
+  const q=document.getElementById('search-input').value.trim();
+  if(!q){showToast('请输入搜索内容');return}
+  document.getElementById('hot-search').style.display='none';
+  const r=document.getElementById('search-result');
+  r.style.display='block';
+  r.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">搜索中...</div>';
+  try {
+    // 搜索 API 需要 WBI 签名
+    const signed = await wbiSign({search_type:'video', keyword:q, page:1, page_size:20, order:'total_rank'});
+    const params = new URLSearchParams(signed).toString();
+    const data = await biliFetch('https://api.bilibili.com/x/web-interface/wbi/search/type?'+params);
+    const results = (data.data.result||[]).map(item=>({
+      bvid: item.bvid,
+      title: item.title.replace(/<em class="keyword">|<\/em>/g,''),
+      cover: 'https:'+item.pic+'@400w_250h.webp',
+      duration: fmtDuration(item.duration),
+      up: item.author,
+      views: fmtNum(item.play),
+      danmaku: fmtNum(item.video_review),
+      date: new Date(item.pubdate*1000).toLocaleDateString('zh-CN'),
+    }));
+    if(results.length===0){
+      r.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">没有找到相关视频</div>';
+    } else {
+      r.innerHTML=`<div style="padding:10px 0;font-size:13px;color:var(--text3)">"${q}" 共 ${results.length} 条结果</div>`+
+        '<div class="video-grid" style="padding:0">'+results.map(renderVideoCard).join('')+'</div>';
+    }
+  } catch(e){
+    console.warn('搜索失败:', e);
+    r.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">搜索失败，请稍后重试<br><span style="font-size:11px">'+e.message+'</span></div>';
+  }
+}
+
+// ============ Tab 切换 ============
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  if(tab==='search')setTimeout(()=>document.getElementById('search-input').focus(),100);
+  if(tab==='message'){renderSessions();if(window.innerWidth<768)closeChat()}
+}
+function switchHomeTab(tab){
+  currentHomeTab=tab;
+  document.querySelectorAll('.home-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  if(tab==='recommend') loadVideos();
+  else loadRanking();
+}
+
+// ============ 视频详情 ============
+async function openVideo(bvid){
+  const v=videos.find(x=>x.bvid===bvid)||videos[0];
+  // 先用列表数据填充
+  document.getElementById('vd-title').textContent=v.title;
+  document.getElementById('vd-views').textContent='▶ '+v.views+'播放';
+  document.getElementById('vd-danmaku').textContent='💬 '+v.danmaku+'弹幕';
+  document.getElementById('vd-date').textContent='📅 '+v.date;
+  document.getElementById('vd-up').textContent=v.up;
+  document.getElementById('like-count').textContent=v.likeCount||'1.2万';
+  document.getElementById('video-detail').classList.add('active');
+  document.body.style.overflow='hidden';
+  renderRelated();
+  startDanmaku();
+  // 异步获取完整详情
+  try {
+    const data = await biliFetch('https://api.bilibili.com/x/web-interface/view?bvid='+bvid);
+    const d = data.data;
+    document.getElementById('vd-title').textContent=d.title;
+    document.getElementById('vd-views').textContent='▶ '+fmtNum(d.stat.view)+'播放';
+    document.getElementById('vd-danmaku').textContent='💬 '+fmtNum(d.stat.danmaku)+'弹幕';
+    document.getElementById('vd-date').textContent='📅 '+new Date(d.pubdate*1000).toLocaleDateString('zh-CN');
+    document.getElementById('vd-up').textContent=d.owner.name;
+    document.getElementById('like-count').textContent=fmtNum(d.stat.like);
+    // 更新相关推荐
+    if(d.related && d.related.length){
+      const related = d.related.slice(0,6).map(item=>({
+        bvid:item.bvid, title:item.title,
+        cover:item.pic+'@400w_250h.webp',
+        duration:typeof item.duration==='number'?fmtDuration(item.duration):item.duration,
+        up:item.owner?item.owner.name:'未知',
+        views:fmtNum(item.stat?item.stat.view:0),
+      }));
+      document.getElementById('related-grid').innerHTML=related.map(renderVideoCard).join('');
+    }
+  } catch(e){console.warn('视频详情加载失败:',e)}
+}
+function closeVideo(){
+  document.getElementById('video-detail').classList.remove('active');
+  document.body.style.overflow='';
+  isPlaying=false;updatePlayBtn();stopDanmaku();
+}
+function togglePlay(){isPlaying=!isPlaying;updatePlayBtn();if(isPlaying)showToast('播放')}
+function updatePlayBtn(){
+  document.getElementById('play-btn').style.display=isPlaying?'none':'flex';
+  document.getElementById('play-ctrl').textContent=isPlaying?'⏸':'▶';
+}
+function seekVideo(e){
+  const bar=e.currentTarget;const rect=bar.getBoundingClientRect();
+  const pct=((e.clientX-rect.left)/rect.width*100).toFixed(0);
+  document.getElementById('progress-fill').style.width=pct+'%';
+}
+function cycleSpeed(){
+  currentSpeed=(currentSpeed+1)%speeds.length;
+  document.getElementById('speed-btn').textContent=speeds[currentSpeed]+'x';
+  showToast('倍速：'+speeds[currentSpeed]+'x');
+}
+function cycleQuality(){
+  qualityIdx=(qualityIdx+1)%qualities.length;
+  document.getElementById('quality-btn').textContent=qualities[qualityIdx];
+  showToast('画质：'+qualities[qualityIdx]);
+}
+function toggleDanmaku(){
+  danmakuOn=!danmakuOn;
+  document.getElementById('danmaku-btn').textContent=danmakuOn?'弹':'关';
+  document.getElementById('danmaku-layer').style.display=danmakuOn?'block':'none';
+  showToast(danmakuOn?'弹幕开':'弹幕关');
+}
+let danmakuTimer=null;
+function startDanmaku(){
+  stopDanmaku();
+  const layer=document.getElementById('danmaku-layer');
+  danmakuTimer=setInterval(()=>{
+    if(!danmakuOn)return;
+    const d=document.createElement('div');
+    d.className='danmaku-item';
+    d.textContent=danmakuTexts[Math.floor(Math.random()*danmakuTexts.length)];
+    d.style.top=Math.floor(Math.random()*70)+'%';
+    d.style.animationDuration=(6+Math.random()*4)+'s';
+    layer.appendChild(d);
+    setTimeout(()=>d.remove(),10000);
+  },800);
+}
+function stopDanmaku(){if(danmakuTimer){clearInterval(danmakuTimer);danmakuTimer=null}document.getElementById('danmaku-layer').innerHTML=''}
+function toggleLike(){
+  const el=document.getElementById('act-like');
+  el.classList.toggle('liked');
+  const c=document.getElementById('like-count');
+  c.textContent=el.classList.contains('liked')?'1.3万':'1.2万';
+}
+
+// ============ 私信 ============
+function renderSessions(){
+  document.getElementById('session-items').innerHTML=sessions.map(s=>`
+    <div class="session-item ${currentSession===s.id?'active':''}" onclick="openSession(${s.id})">
+      <div class="session-avatar">${s.unread>0?`<span class="session-unread">${s.unread>99?'99+':s.unread}</span>`:''}</div>
+      <div class="session-info"><div class="session-name">${s.name}</div><div class="session-last">${s.last}</div></div>
+      <span class="session-time">${s.time}</span></div>`).join('');
+}
+function openSession(id){
+  currentSession=id;
+  const s=sessions.find(x=>x.id===id);
+  document.getElementById('chat-title').textContent=s.name;
+  document.getElementById('session-list').classList.add('hidden');
+  document.getElementById('chat-panel').classList.add('active');
+  renderChatMessages();
+  // 清除未读
+  s.unread=0;renderSessions();
+}
+function closeChat(){
+  document.getElementById('session-list').classList.remove('hidden');
+  document.getElementById('chat-panel').classList.remove('active');
+  currentSession=null;
+}
+function renderChatMessages(){
+  const msgs=chatMessages[currentSession]||[];
+  const container=document.getElementById('chat-messages');
+  container.innerHTML=msgs.map(renderChatMsg).join('');
+  container.scrollTop=container.scrollHeight;
+}
+function renderChatMsg(m){
+  if(m.type==='time')return `<div class="msg-time-label">${m.text}</div>`;
+  if(m.type==='system')return `<div class="msg-system"><span>${m.text}</span></div>`;
+  if(m.type==='tip')return `<div class="msg-system"><span>${m.text}</span></div>`;
+  const selfCls=m.self?'self':'';
+  let body='';
+  if(m.type==='text'){
+    body=`<div class="msg-bubble">${m.text}</div>`;
+  }else if(m.type==='image'){
+    body=`<div class="msg-bubble" style="padding:4px"><img src="${m.url}" style="width:180px;border-radius:8px;display:block"></div>`;
+  }else if(m.type==='video'){
+    body=`<div class="msg-card" onclick="showToast('打开视频：${m.title}')">
+      <img src="${m.cover}" alt=""><div class="msg-card-info">
+      <div class="msg-card-title">${m.title}</div>
+      <div class="msg-card-meta">⏱ ${m.duration} · UP: ${m.up}</div></div></div>`;
+  }else if(m.type==='article'){
+    body=`<div class="msg-card" onclick="showToast('打开专栏')">
+      <img src="${m.cover}" alt="" style="aspect-ratio:16/9">
+      <div class="msg-card-info"><div class="msg-card-title">${m.title}</div>
+      <div class="msg-card-meta">📝 ${m.summary}</div></div></div>`;
+  }else if(m.type==='share'){
+    body=`<div class="msg-card" onclick="showToast('打开${m.source}')">
+      <img src="${m.cover}" alt=""><div class="msg-card-info">
+      <div class="msg-card-title">${m.title}</div>
+      <div class="msg-card-meta">${m.source} · ${m.up}</div></div></div>`;
+  }else if(m.type==='notify'){
+    body=`<div class="msg-card" style="max-width:280px;padding:12px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">${m.title}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">${m.text}</div>
+      ${m.modules.map(mod=>`<div style="display:flex;gap:8px;font-size:11px;margin:3px 0"><span style="color:var(--text3);min-width:60px">${mod.title}</span><span>${mod.detail}</span></div>`).join('')}
+      </div>`;
+  }else if(m.type==='recommend'){
+    body=`<div class="msg-card" style="max-width:280px;padding:10px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px">${m.mainTitle}</div>
+      ${m.cards.map(c=>`<div style="display:flex;gap:8px;margin-bottom:8px;cursor:pointer" onclick="showToast('打开：${c.title}')">
+        <img src="${c.cover}" style="width:100px;height:56px;object-fit:cover;border-radius:6px">
+        <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${c.title}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">${c.meta1} · ${c.meta2}</div></div></div>`).join('')}
+      </div>`;
+  }
+  return `<div class="msg-row ${selfCls}"><div class="msg-avatar-sm"></div>${body}</div>`;
+}
+function sendChatMsg(){
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text||!currentSession)return;
+  if(!chatMessages[currentSession])chatMessages[currentSession]=[];
+  chatMessages[currentSession].push({type:'text',self:true,text});
+  input.value='';
+  renderChatMessages();
+  // 模拟对方回复
+  setTimeout(()=>{
+    const replies=['收到！','好的好的','哈哈哈哈','这个有意思','我看看','666','确实','明天再说吧'];
+    chatMessages[currentSession].push({type:'text',self:false,text:replies[Math.floor(Math.random()*replies.length)]});
+    renderChatMessages();
+  },1200);
+}
+
+// ============ 初始化 ============
+renderHot();loadVideos();loadLives();
+</script>
+</body>
+</html>
+<!-- （注：内容由AI生成） -->
