@@ -384,7 +384,15 @@ async function detectLocalProxy(){
   return LOCAL_PROXY;
 }
 // 视频流地址：经本地代理时自动补 Referer（B站 CDN 强制校验，否则 403）
-function mediaSrc(u){return LOCAL_PROXY?('/__media?url='+encodeURIComponent(u)):u}
+function mediaSrc(u){return LOCAL_PROXY?proxyUrl('/__media',u):u}
+
+// 目标 URL 用 base64url 编码后再放进查询串。
+// 原因：%26（&）等转义在某些网关/中间层会被还原成 &，导致 serve.py 的 url 参数被截断，
+// 上游只拿到半截地址 → B站返回 -400「请求错误」。base64url 只含 [A-Za-z0-9-_]，不会被改写。
+function b64url(s){
+  return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function proxyUrl(path,target){return path+'?url='+b64url(target)}
 
 // 公共 CORS 代理列表（按优先级尝试）
 const CORS_PROXIES = [
@@ -402,7 +410,7 @@ async function biliFetch(url, opts={}, timeout=8000) {
   // raw=true 时允许 code!==0 也返回数据（如 nav 未登录返回 -101 但带 wbi_img）
   const raw = !!opts.raw;
   // 自动带上 Cookie（需要用户先通过 Cookie 粘贴登录）
-  const cookie = CookieStore.load();
+  const cookie = CookieStore.header();
 
   // ① 本地代理优先（同源，Cookie 通过 X-Bili-Cookie 头透传）
   if(LOCAL_PROXY){
@@ -413,7 +421,7 @@ async function biliFetch(url, opts={}, timeout=8000) {
       if(cookie && !h['X-Bili-Cookie']) h['X-Bili-Cookie']=cookie;
       const fo = {signal:controller.signal, method:opts.method||'GET', headers:h};
       if(opts.body) fo.body = opts.body;
-      const resp = await fetch('/__api?url='+encodeURIComponent(url), fo);
+      const resp = await fetch(proxyUrl('/__api',url), fo);
       clearTimeout(timer);
       if(resp.ok){
         const data = JSON.parse(await resp.text());
@@ -458,38 +466,54 @@ async function biliFetch(url, opts={}, timeout=8000) {
 }
 
 // MD5（纯 JS 实现，用于 WBI 签名）
-function md5(s){
-  function rh(n,j){var s='',md='0123456789abcdef';for(var i=0;i<j;i++)s+=md.charAt((n>>(i*4+4))&0x0f)+md.charAt((n>>(i*4))&0x0f);return s}
-  function ad(x,y){var l=(x&0xffff)+(y&0xffff);var m=(x>>16)+(y>>16)+(l>>16);return(m<<16)|(l&0xffff)}
-  function rl(n,c){return(n<<c)|(n>>>(32-c))}
-  function cm(q,a,b,x,s,t){return ad(rl(ad(ad(a,q),ad(x,t)),s),b)}
-  function ff(a,b,c,d,x,s,t){return cm((b&c)|((~b)&d),a,b,x,s,t)}
-  function gg(a,b,c,d,x,s,t){return cm((b&d)|(c&(~d)),a,b,x,s,t)}
-  function hh(a,b,c,d,x,s,t){return cm(b^c^d,a,b,x,s,t)}
-  function ii(a,b,c,d,x,s,t){return cm(c^(b|(~d)),a,b,x,s,t)}
-  function cv(s){var b=[];for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);if(c<128)b.push(c);else if(c<2048){b.push(192|(c>>6));b.push(128|(c&63))}else{b.push(224|(c>>12));b.push(128|((c>>6)&63));b.push(128|(c&63))}}return b}
-  var x=cv(s),a=1732584193,b=-271733879,c=-1732584194,d=271733878;
-  for(var i=0;i<x.length;i+=64){var o=x[i+14]|(x[i+15]<<8);x[i+14]=(o<<7)|(o>>>25);x[i+15]=o>>>9;
-    var aa=a,bb=b,cc=c,dd=d;
-    a=ff(a,b,c,d,x[i+0],7,-680876936);d=ff(d,a,b,c,x[i+1],12,-389564586);c=ff(c,d,a,b,x[i+2],17,606105819);b=ff(b,c,d,a,x[i+3],22,-1044525330);
-    a=ff(a,b,c,d,x[i+4],7,-176418897);d=ff(d,a,b,c,x[i+5],12,1200080426);c=ff(c,d,a,b,x[i+6],17,-1473231341);b=ff(b,c,d,a,x[i+7],22,-45705983);
-    a=ff(a,b,c,d,x[i+8],7,1770035416);d=ff(d,a,b,c,x[i+9],12,-1958414417);c=ff(c,d,a,b,x[i+10],17,-42063);b=ff(b,c,d,a,x[i+11],22,-1990404162);
-    a=ff(a,b,c,d,x[i+12],7,1804603682);d=ff(d,a,b,c,x[i+13],12,-40341101);c=ff(c,d,a,b,x[i+14],17,-1502002290);b=ff(b,c,d,a,x[i+15],22,1236535329);
-    a=gg(a,b,c,d,x[i+1],5,-165796510);d=gg(d,a,b,c,x[i+6],9,-1069501632);c=gg(c,d,a,b,x[i+11],14,643717713);b=gg(b,c,d,a,x[i+0],20,-373897302);
-    a=gg(a,b,c,d,x[i+5],5,-701558691);d=gg(d,a,b,c,x[i+10],9,38016083);c=gg(c,d,a,b,x[i+15],14,-660478335);b=gg(b,c,d,a,x[i+4],20,-405537848);
-    a=gg(a,b,c,d,x[i+9],5,568446438);d=gg(d,a,b,c,x[i+14],9,-1019803690);c=gg(c,d,a,b,x[i+3],14,-187363961);b=gg(b,c,d,a,x[i+8],20,1163531501);
-    a=gg(a,b,c,d,x[i+13],5,-1444681467);d=gg(d,a,b,c,x[i+2],9,-51403784);c=gg(c,d,a,b,x[i+7],14,1735328473);b=gg(b,c,d,a,x[i+12],20,-1926607734);
-    a=hh(a,b,c,d,x[i+5],4,-378558);d=hh(d,a,b,c,x[i+8],11,-2022574463);c=hh(c,d,a,b,x[i+11],16,1839030562);b=hh(b,c,d,a,x[i+14],23,-35309556);
-    a=hh(a,b,c,d,x[i+1],4,-1530992060);d=hh(d,a,b,c,x[i+4],11,1272893353);c=hh(c,d,a,b,x[i+7],16,-155497632);b=hh(b,c,d,a,x[i+10],23,-1094730640);
-    a=hh(a,b,c,d,x[i+13],4,681279174);d=hh(d,a,b,c,x[i+0],11,-358537222);c=hh(c,d,a,b,x[i+3],16,-722521979);b=hh(b,c,d,a,x[i+6],23,76029189);
-    a=hh(a,b,c,d,x[i+9],4,-640364487);d=hh(d,a,b,c,x[i+12],11,-421815835);c=hh(c,d,a,b,x[i+15],16,530742520);b=hh(b,c,d,a,x[i+2],23,-995338651);
-    a=ii(a,b,c,d,x[i+0],6,-198630844);d=ii(d,a,b,c,x[i+7],10,1126891415);c=ii(c,d,a,b,x[i+14],15,-1416354905);b=ii(b,c,d,a,x[i+5],21,-57434055);
-    a=ii(a,b,c,d,x[i+12],6,1700485571);d=ii(d,a,b,c,x[i+3],10,-1894986606);c=ii(c,d,a,b,x[i+10],15,-1051523);b=ii(b,c,d,a,x[i+1],21,-2054922799);
-    a=ii(a,b,c,d,x[i+8],6,1873313359);d=ii(d,a,b,c,x[i+15],10,-30611744);c=ii(c,d,a,b,x[i+6],15,-1560198380);b=ii(b,c,d,a,x[i+13],21,1309151649);
-    a=ii(a,b,c,d,x[i+4],6,-145523070);d=ii(d,a,b,c,x[i+11],10,-1120210379);c=ii(c,d,a,b,x[i+2],15,718787259);b=ii(b,c,d,a,x[i+9],21,-343485551);
-    a=ad(a,aa);b=ad(b,bb);c=ad(c,cc);d=ad(d,dd);
+// 之前的实现缺少「补位 + 长度追加」，且 rh() 每个字输出 16 个字符，导致哈希恒为 64 位且结果错误，
+// 于是 WBI 签名全部非法 → playurl 返回非 0 code → 视频一直播不了。这里换成标准实现。
+function md5(str){
+  function safeAdd(x,y){var lsw=(x&0xffff)+(y&0xffff);var msw=(x>>16)+(y>>16)+(lsw>>16);return(msw<<16)|(lsw&0xffff)}
+  function rol(num,cnt){return(num<<cnt)|(num>>>(32-cnt))}
+  function cmn(q,a,b,x,s,t){return safeAdd(rol(safeAdd(safeAdd(a,q),safeAdd(x,t)),s),b)}
+  function ff(a,b,c,d,x,s,t){return cmn((b&c)|(~b&d),a,b,x,s,t)}
+  function gg(a,b,c,d,x,s,t){return cmn((b&d)|(c&~d),a,b,x,s,t)}
+  function hh(a,b,c,d,x,s,t){return cmn(b^c^d,a,b,x,s,t)}
+  function ii(a,b,c,d,x,s,t){return cmn(c^(b|~d),a,b,x,s,t)}
+  function core(x,len){
+    x[len>>5]|=0x80<<(len%32);
+    x[(((len+64)>>>9)<<4)+14]=len;
+    var i,oa,ob,oc,od,a=1732584193,b=-271733879,c=-1732584194,d=271733878;
+    for(i=0;i<x.length;i+=16){
+      oa=a;ob=b;oc=c;od=d;
+      a=ff(a,b,c,d,x[i],7,-680876936);d=ff(d,a,b,c,x[i+1],12,-389564586);c=ff(c,d,a,b,x[i+2],17,606105819);b=ff(b,c,d,a,x[i+3],22,-1044525330);
+      a=ff(a,b,c,d,x[i+4],7,-176418897);d=ff(d,a,b,c,x[i+5],12,1200080426);c=ff(c,d,a,b,x[i+6],17,-1473231341);b=ff(b,c,d,a,x[i+7],22,-45705983);
+      a=ff(a,b,c,d,x[i+8],7,1770035416);d=ff(d,a,b,c,x[i+9],12,-1958414417);c=ff(c,d,a,b,x[i+10],17,-42063);b=ff(b,c,d,a,x[i+11],22,-1990404162);
+      a=ff(a,b,c,d,x[i+12],7,1804603682);d=ff(d,a,b,c,x[i+13],12,-40341101);c=ff(c,d,a,b,x[i+14],17,-1502002290);b=ff(b,c,d,a,x[i+15],22,1236535329);
+      a=gg(a,b,c,d,x[i+1],5,-165796510);d=gg(d,a,b,c,x[i+6],9,-1069501632);c=gg(c,d,a,b,x[i+11],14,643717713);b=gg(b,c,d,a,x[i],20,-373897302);
+      a=gg(a,b,c,d,x[i+5],5,-701558691);d=gg(d,a,b,c,x[i+10],9,38016083);c=gg(c,d,a,b,x[i+15],14,-660478335);b=gg(b,c,d,a,x[i+4],20,-405537848);
+      a=gg(a,b,c,d,x[i+9],5,568446438);d=gg(d,a,b,c,x[i+14],9,-1019803690);c=gg(c,d,a,b,x[i+3],14,-187363961);b=gg(b,c,d,a,x[i+8],20,1163531501);
+      a=gg(a,b,c,d,x[i+13],5,-1444681467);d=gg(d,a,b,c,x[i+2],9,-51403784);c=gg(c,d,a,b,x[i+7],14,1735328473);b=gg(b,c,d,a,x[i+12],20,-1926607734);
+      a=hh(a,b,c,d,x[i+5],4,-378558);d=hh(d,a,b,c,x[i+8],11,-2022574463);c=hh(c,d,a,b,x[i+11],16,1839030562);b=hh(b,c,d,a,x[i+14],23,-35309556);
+      a=hh(a,b,c,d,x[i+1],4,-1530992060);d=hh(d,a,b,c,x[i+4],11,1272893353);c=hh(c,d,a,b,x[i+7],16,-155497632);b=hh(b,c,d,a,x[i+10],23,-1094730640);
+      a=hh(a,b,c,d,x[i+13],4,681279174);d=hh(d,a,b,c,x[i],11,-358537222);c=hh(c,d,a,b,x[i+3],16,-722521979);b=hh(b,c,d,a,x[i+6],23,76029189);
+      a=hh(a,b,c,d,x[i+9],4,-640364487);d=hh(d,a,b,c,x[i+12],11,-421815835);c=hh(c,d,a,b,x[i+15],16,530742520);b=hh(b,c,d,a,x[i+2],23,-995338651);
+      a=ii(a,b,c,d,x[i],6,-198630844);d=ii(d,a,b,c,x[i+7],10,1126891415);c=ii(c,d,a,b,x[i+14],15,-1416354905);b=ii(b,c,d,a,x[i+5],21,-57434055);
+      a=ii(a,b,c,d,x[i+12],6,1700485571);d=ii(d,a,b,c,x[i+3],10,-1894986606);c=ii(c,d,a,b,x[i+10],15,-1051523);b=ii(b,c,d,a,x[i+1],21,-2054922799);
+      a=ii(a,b,c,d,x[i+8],6,1873313359);d=ii(d,a,b,c,x[i+15],10,-30611744);c=ii(c,d,a,b,x[i+6],15,-1560198380);b=ii(b,c,d,a,x[i+13],21,1309151649);
+      a=ii(a,b,c,d,x[i+4],6,-145523070);d=ii(d,a,b,c,x[i+11],10,-1120210379);c=ii(c,d,a,b,x[i+2],15,718787259);b=ii(b,c,d,a,x[i+9],21,-343485551);
+      a=safeAdd(a,oa);b=safeAdd(b,ob);c=safeAdd(c,oc);d=safeAdd(d,od);
+    }
+    return[a,b,c,d];
   }
-  return rh(a,8)+rh(b,8)+rh(c,8)+rh(d,8);
+  function utf8(s){return unescape(encodeURIComponent(String(s)))}
+  function toWords(s){var i,o=[],len=s.length*8;for(i=0;i<len;i+=8)o[i>>5]|=(s.charCodeAt(i/8)&0xff)<<(i%32);return o}
+  function wordsToHex(words){
+    var hex='0123456789abcdef',out='',i,x;
+    for(i=0;i<words.length*4;i++){
+      x=(words[i>>2]>>((i%4)*8+4))&0x0f;out+=hex.charAt(x);
+      x=(words[i>>2]>>((i%4)*8))&0x0f;out+=hex.charAt(x);
+    }
+    return out;
+  }
+  var u=utf8(str);
+  return wordsToHex(core(toWords(u),u.length*8));
 }
 
 // WBI 签名
@@ -529,7 +553,8 @@ function fmtNum(n){
   return String(n);
 }
 function fmtDuration(sec){
-  if(!sec) return '00:00';
+  sec=Math.floor(Number(sec)||0);           // 播放进度是小数秒，先取整再格式化
+  if(sec<=0) return '00:00';
   const m=Math.floor(sec/60),s=sec%60;
   return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
 }
@@ -875,9 +900,10 @@ async function loadDanmaku(cid,totalDuration=300){
   for(let i=1;i<=segs;i++){
     try{
       const url='https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid='+cid+'&segment_index='+i;
+      const ck=CookieStore.header();
       const resp=LOCAL_PROXY
-        ? await fetch('/__api?url='+encodeURIComponent(url),{headers:{'X-Bili-Cookie':CookieStore.load()}})
-        : await fetch(url,{headers:{Cookie:CookieStore.load(),Referer:'https://www.bilibili.com'}});
+        ? await fetch(proxyUrl('/__api',url),{headers:ck?{'X-Bili-Cookie':ck}:{}})
+        : await fetch(url,{headers:ck?{Cookie:ck,Referer:'https://www.bilibili.com'}:{Referer:'https://www.bilibili.com'}});
       if(!resp.ok)continue;
       const bytes=new Uint8Array(await resp.arrayBuffer());
       const items=parseDanmaku(bytes);
@@ -894,19 +920,38 @@ const QUALITY_MAP=[
   {qn:74,l:'720P60'},{qn:80,l:'1080P'},{qn:112,l:'1080P+'},
   {qn:116,l:'1080P60'},{qn:120,l:'4K'},{qn:125,l:'HDR'},{qn:127,l:'8K'}
 ];
+// 播放流获取失败时的真实原因（用于提示，避免静默失败）
+let lastPlayUrlError='';
 async function loadPlayUrl(bvid,aid,cid,qn=80){
+  lastPlayUrlError='';
+  // 关键：必须带 platform=html5，接口才会返回「单文件 MP4（含音轨）」，<video> 可直接播放。
+  // 之前的 fnval=16|1（DASH+FLV）在未登录时只会返回 FLV 的 durl，而浏览器不支持 FLV，所以一直播不了。
+  const base={bvid,aid,cid,qn,fnval:1,fnver:0,fourk:1,platform:'html5',high_quality:1};
+  // ① WBI 签名接口（推荐）
   try{
-    const signed=await wbiSign({bvid,aid,cid,qn,fnval:16|1,fnver:0,fourk:1});
+    const signed=await wbiSign(base);
     const u='https://api.bilibili.com/x/player/wbi/playurl?'+new URLSearchParams(signed).toString();
-    const data=await biliFetch(u);
-    return data.data;
-  }catch(e){return null}
+    const data=await biliFetch(u,{},15000);
+    if(data&&data.data) return data.data;
+    lastPlayUrlError='wbi 接口无 data';
+  }catch(e){ lastPlayUrlError='wbi 接口：'+e.message; console.warn('[BiliFlex] wbi playurl 失败：',e.message); }
+  // ② 降级：非签名接口。platform=html5 时同样返回单文件 MP4，且不需要 w_rid，可绕开签名问题
+  try{
+    const u='https://api.bilibili.com/x/player/playurl?'+new URLSearchParams(base).toString();
+    const data=await biliFetch(u,{},15000);
+    if(data&&data.data) return data.data;
+    lastPlayUrlError='降级接口无 data';
+  }catch(e){ lastPlayUrlError='降级接口：'+e.message; console.warn('[BiliFlex] 降级 playurl 失败：',e.message); }
+  return null;
 }
 function pickDurlByQn(durl,qn){
   // durl 结构简化为 [{url,backup_url:[],id,quality,length,size}]
+  // 注意：html5 平台返回的 durl 只有一项且没有 id 字段，此时直接取第一项。
   if(!durl||!durl.length)return null;
   if(qn){const f=durl.find(d=>d.id===qn);if(f)return f}
-  return durl.sort((a,b)=>b.id-a.id)[0];
+  const withId=durl.filter(d=>d.id);
+  if(withId.length)return withId.sort((a,b)=>b.id-a.id)[0];
+  return durl[0];
 }
 async function pickDashByQn(dash,qn){
   // dash.video / dash.audio: [{baseUrl,backupUrl[],qualityType,codecs,width,height,frameRate...}]
@@ -947,6 +992,11 @@ async function openVideo(bvid,aid,initialCid){
       document.getElementById('play-time').textContent=fmtDuration(t)+' / '+fmtDuration(d);
     });
     videoPlayer.addEventListener('ended',()=>{document.getElementById('play-ctrl').textContent='▶'});
+    videoPlayer.addEventListener('error',()=>{
+      const e=videoPlayer.error;
+      console.warn('[BiliFlex] video error',e&&e.code,e&&e.message);
+      showToast('视频加载失败：'+(LOCAL_PROXY?'请检查网络或稍后重试':('请用 python3 serve.py 启动本地代理后访问 http://localhost:8765/biliweb.html')));
+    });
     videoBound=true;
     initDanmakuCanvas();
   }
@@ -1048,7 +1098,7 @@ async function loadCommentsAsync(aid){
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;color:var(--blue);font-weight:500">${m.user}</div>
         <div style="font-size:14px;margin-top:3px;line-height:1.45">${m.text||''}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:5px">${fmtNum(m.like||0)} 赞 · ${fmt.timeAgo?fmt.timeAgo(m.time):new Date((m.time||0)*1000).toLocaleDateString('zh-CN')}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">${fmtNum(m.like||0)} 赞 · ${m.time?new Date(m.time*1000).toLocaleDateString('zh-CN'):''}</div>
       </div>
     </div>`).join('');
 }
@@ -1084,27 +1134,31 @@ async function switchVideoPage(idx){
   currentPlayData=pd;
   if(pd){
     let src=null;
-    // 优先使用 durl（带音轨的 FLV）
+    // 优先使用 durl（html5 平台下是单文件 MP4，含音轨，可直接播放）
     if(pd.durl&&pd.durl.length){
       const f=pickDurlByQn(pd.durl,qn)||pd.durl[0];
       src=f.url;
-      currentPlaySource={url:src,type:'flv',durl:f};
-      currentQuality=f.id;
+      currentPlaySource={url:src,type:'mp4',durl:f};
+      currentQuality=pd.quality||f.id||qn;
     }else if(pd.dash){
       const d=await pickDashByQn(pd.dash,qn);
-      if(d){src=d.v.baseUrl;currentPlaySource={url:src,type:'dashv',dashv:d.v.baseUrl,audio:d.a?d.a.baseUrl:''}}
+      if(d){src=d.v.baseUrl;currentPlaySource={url:src,type:'dashv',dashv:d.v.baseUrl,audio:d.a?d.a.baseUrl:''};currentQuality=qn}
     }
     if(src){
       // 更新画质按钮
-      const allQ=pd.accept_quality||[];
       const qnName=QUALITY_MAP.find(x=>x.qn===currentQuality)?.l||'自动';
       document.getElementById('quality-btn').textContent=qnName;
       // 经本地代理播放：自动补 Referer，否则 B 站 CDN 返回 403
       videoPlayer.src=mediaSrc(src);
-      videoPlayer.play().catch(()=>{});
+      videoPlayer.play().catch(err=>{
+        // 浏览器自动播放策略会拦截「带声音的自动播放」，这里静默处理，等用户点播放按钮
+        if(err&&err.name!=='NotAllowedError')console.warn('[BiliFlex] 播放失败：',err.message);
+      });
     }
   }else{
-    showToast(LOCAL_PROXY?'播放流获取失败（可能需要登录）':'无法获取播放流：请用 python3 serve.py 启动本地代理后再打开页面');
+    console.warn('[BiliFlex] 播放流获取失败：',lastPlayUrlError);
+    if(!LOCAL_PROXY) showToast('无法获取播放流：请用 python3 serve.py 启动本地代理后再打开页面');
+    else showToast('获取播放流失败：'+(lastPlayUrlError||'可能需要登录 Cookie'));
   }
   // 更新时长
   videoPlayer.loadedmetadata=()=>{
@@ -1132,10 +1186,11 @@ async function changeQuality(qn){
   const pd=await loadPlayUrl(currentVideo.bvid,currentVideo.aid,page.cid,qn);
   if(pd){
     let url=null;
-    if(pd.durl){const f=pickDurlByQn(pd.durl,qn);if(f)url=f.url;currentQuality=f?.id||qn}
+    if(pd.durl){const f=pickDurlByQn(pd.durl,qn);if(f)url=f.url;currentQuality=pd.quality||qn}
     else if(pd.dash){const d=await pickDashByQn(pd.dash,qn);if(d){url=d.v.baseUrl;currentQuality=qn}}
     if(url){
-      videoPlayer.pause();videoPlayer.src=mediaSrc(url);videoPlayer.play().catch(()=>{});
+      videoPlayer.pause();videoPlayer.src=mediaSrc(url);
+      videoPlayer.play().catch(()=>{});
       document.getElementById('quality-btn').textContent=QUALITY_MAP.find(x=>x.qn===currentQuality)?.l||'自动';
     }
   }
@@ -1423,7 +1478,9 @@ const CookieStore={
   get mid(){return parseInt((this.load().match(/DedeUserID=([^;]+)/)?.[1]||'0'),10)},
   get uname(){try{return JSON.parse(localStorage.getItem(LS_SESSION)||'{}').uname||''}catch(e){return''}},
   get face(){try{return JSON.parse(localStorage.getItem(LS_SESSION)||'{}').face||''}catch(e){return''}},
-  get loggedIn(){return this.csrf.length>0 && this.mid>0}
+  get loggedIn(){return this.csrf.length>0 && this.mid>0},
+  // 作为 HTTP 头使用前先清洗：去掉换行/非 ASCII 字符，否则 fetch 会直接抛错，导致播放流请求静默失败
+  header(){return this.load().replace(/[^\x21-\x7E]/g,' ').replace(/\s{2,}/g,' ').trim()}
 };
 async function loginByCookie(cookieStr){
   CookieStore.save(cookieStr);

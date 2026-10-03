@@ -16,6 +16,7 @@
 用法：  python3 serve.py        （默认端口 8765，可用 PORT 环境变量修改）
 """
 
+import base64
 import http.server
 import json
 import os
@@ -80,7 +81,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._send(200, b"biliflex-proxy-ok", head=head)
         if path in ("/__api", "/__media"):
             qs = urllib.parse.parse_qs(parsed.query)
-            target = (qs.get("url") or [""])[0]
+            target = self._decode_target((qs.get("url") or [""])[0])
             if not target:
                 return self._send(
                     400, json.dumps({"code": -1, "message": "missing url"}).encode(),
@@ -93,6 +94,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if post:
             return self._send(405, b"method not allowed", head=head)
         return super().do_GET()
+
+    # ---------- 目标地址解码 ----------
+    @staticmethod
+    def _decode_target(raw):
+        """页面传来的目标地址。
+
+        页面用 base64url 编码（只含 [A-Za-z0-9-_]，不含 & ? = %），
+        这样即使中间网关把 %26 还原成 &，也不会截断 url 参数。
+        这里同时兼容直接传明文 URL 的旧写法。
+        """
+        if not raw:
+            return ""
+        if raw.startswith("http://") or raw.startswith("https://"):
+            return raw
+        pad = "=" * (-len(raw) % 4)
+        try:
+            return base64.urlsafe_b64decode(raw + pad).decode("utf-8")
+        except Exception:
+            return raw
 
     # ---------- 代理转发 ----------
     def _relay(self, target, is_media, head=False, post=False):
@@ -111,6 +131,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             ctype = self.headers.get("Content-Type")
             if ctype:
                 headers["Content-Type"] = ctype
+
+        if os.environ.get("BILIFLEX_DEBUG"):
+            sys.stderr.write("[dbg] target=%s out=%s\n" % (target, headers))
 
         req = urllib.request.Request(
             target, data=data, headers=headers, method="POST" if post else "GET"
